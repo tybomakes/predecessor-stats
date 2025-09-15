@@ -1,4 +1,13 @@
 import { API_BASE_URL } from '$lib/config/api';
+import { browser } from '$app/environment';
+
+// CORS Proxy configuration - only use in browser
+// List of CORS proxy services to try in order
+const CORS_PROXIES = [
+	'https://api.allorigins.win/raw?url=',
+	'https://corsproxy.io/?',
+	'https://cors-anywhere.herokuapp.com/'
+];
 
 // Types
 export interface Player {
@@ -82,18 +91,52 @@ async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Prom
 		});
 	}
 
-	try {
-		const response = await fetch(url.toString(), buildFetchOptions());
+	// Try each proxy until one works
+	let lastError: Error = new Error('No CORS proxy available');
 
-		if (!response.ok) {
-			throw new Error(`API Error: ${response.status} ${response.statusText}`);
+	for (const proxy of (browser ? CORS_PROXIES : [''])) {
+		try {
+			// Use CORS proxy when in browser environment
+			// This is necessary because Omeda.city API doesn't allow browser CORS requests
+			const finalUrl = browser && proxy
+				? `${proxy}${encodeURIComponent(url.toString())}`
+				: url.toString();
+
+			const response = await fetch(finalUrl, buildFetchOptions());
+
+			if (!response.ok) {
+				throw new Error(`API Error: ${response.status} ${response.statusText}`);
+			}
+
+			const data = await response.json();
+
+			// Some CORS proxies wrap the response, check if we need to unwrap
+			if (data && typeof data === 'object' && 'contents' in data) {
+				// If the proxy wraps the response, extract the actual data
+				const contents = typeof data.contents === 'string'
+					? JSON.parse(data.contents)
+					: data.contents;
+				return contents;
+			}
+
+			return data;
+		} catch (error) {
+			console.warn(`Failed with proxy ${proxy || 'direct'}:`, error);
+			lastError = error as Error;
+
+			// If not in browser, don't try more proxies
+			if (!browser) break;
 		}
-
-		return await response.json();
-	} catch (error) {
-		console.error(`Failed to fetch ${endpoint}:`, error);
-		throw error;
 	}
+
+	console.error(`Failed to fetch ${endpoint} after trying all proxies:`, lastError);
+
+	// Provide more helpful error messages
+	if (lastError instanceof TypeError && lastError.message.includes('Failed to fetch')) {
+		throw new Error('Network error: Unable to reach the API through any proxy. Please check your connection.');
+	}
+
+	throw lastError;
 }
 
 // API Methods
