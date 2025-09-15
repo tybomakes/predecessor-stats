@@ -2,8 +2,8 @@ import { API_BASE_URL } from '$lib/config/api';
 import { browser } from '$app/environment';
 
 // CORS Proxy configuration - only use in browser
-// Using corsproxy.org which is a free, open CORS proxy
-const CORS_PROXY = 'https://corsproxy.org/?';
+// Using api.allorigins.win which is a reliable CORS proxy
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
 // Types
 export interface Player {
@@ -91,7 +91,7 @@ async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Prom
 		// Use CORS proxy when in browser environment
 		// This is necessary because Omeda.city API doesn't allow browser CORS requests
 		const finalUrl = browser
-			? `${CORS_PROXY}${url.toString()}`
+			? `${CORS_PROXY}${encodeURIComponent(url.toString())}`
 			: url.toString();
 
 		const response = await fetch(finalUrl, buildFetchOptions());
