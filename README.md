@@ -36,11 +36,41 @@ npm install
 
 3. Configure the application:
 
-#### Set Password
-Edit `src/lib/stores/auth.ts` and change the `ACCESS_PASSWORD`:
-```typescript
-const ACCESS_PASSWORD = 'your-secure-password-here';
+#### Set Password (IMPORTANT for Security)
+
+**For Development/Local:**
+1. Copy `.env.example` to `.env.local`:
+```bash
+cp .env.example .env.local
 ```
+
+2. Edit `.env.local` and set your password:
+```
+VITE_ACCESS_PASSWORD=your-secure-password-here
+```
+
+**For Production (GitHub Pages):**
+Since GitHub Pages doesn't support server-side environment variables, you have several options:
+
+**Option 1: Use GitHub Actions Secrets (Recommended)**
+1. Go to your repository Settings → Secrets and variables → Actions
+2. Add a new secret called `ACCESS_PASSWORD`
+3. Update the GitHub Actions workflow to inject it during build:
+```yaml
+- name: Build
+  env:
+    VITE_ACCESS_PASSWORD: ${{ secrets.ACCESS_PASSWORD }}
+  run: npm run build
+```
+
+**Option 2: Build Locally and Deploy**
+1. Set the password in `.env.local`
+2. Build locally: `npm run build`
+3. Deploy the build folder manually
+
+**Option 3: Use a Default Password (Less Secure)**
+- The app will fall back to a default password if no environment variable is set
+- Change this in `src/lib/stores/auth.ts` but DO NOT commit sensitive passwords
 
 #### Add Users to Track
 Edit `src/lib/config/users.ts` and add player IDs:

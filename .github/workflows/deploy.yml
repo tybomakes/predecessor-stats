@@ -33,6 +33,7 @@ jobs:
       - name: Build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
+          VITE_ACCESS_PASSWORD: ${{ secrets.ACCESS_PASSWORD }}
         run: npm run build
 
       - name: Upload artifact

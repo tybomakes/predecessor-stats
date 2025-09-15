@@ -1,28 +1,75 @@
 <script lang="ts">
 	import { auth } from '$lib/stores/auth';
+	import { AUTH_CONFIG } from '$lib/config/auth.config';
 
 	let password = $state('');
 	let error = $state('');
 	let loading = $state(false);
 	let authState = $state($auth);
 
-	function handleSubmit(e: Event) {
+	$effect(() => {
+		// Update auth state when it changes
+		authState = $auth;
+	});
+
+	// Calculate remaining lockout time
+	const getRemainingLockoutTime = () => {
+		if (!authState.lockedUntil) return 0;
+		const remaining = authState.lockedUntil - Date.now();
+		return Math.max(0, Math.ceil(remaining / 1000)); // in seconds
+	};
+
+	let remainingTime = $state(getRemainingLockoutTime());
+
+	// Update remaining time every second when locked
+	$effect(() => {
+		if (authState.lockedUntil) {
+			const interval = setInterval(() => {
+				remainingTime = getRemainingLockoutTime();
+				if (remainingTime <= 0) {
+					clearInterval(interval);
+					error = '';
+				}
+			}, 1000);
+
+			return () => clearInterval(interval);
+		}
+	});
+
+	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		error = '';
 		loading = true;
 
-		setTimeout(() => {
-			const success = auth.login(password);
+		// Check if locked out
+		if (auth.isLocked()) {
+			error = `Too many failed attempts. Please wait ${remainingTime} seconds.`;
+			loading = false;
+			return;
+		}
+
+		// Small delay to prevent brute force
+		await new Promise(resolve => setTimeout(resolve, 500));
+
+		try {
+			const success = await auth.login(password);
 			if (!success) {
-				error = 'Invalid password';
 				password = '';
 
-				if (authState.attemptCount >= 3) {
-					error = 'Too many failed attempts. Please refresh the page.';
+				if (authState.lockedUntil) {
+					remainingTime = getRemainingLockoutTime();
+					error = `Too many failed attempts. Locked for ${remainingTime} seconds.`;
+				} else {
+					const remaining = AUTH_CONFIG.maxAttempts - authState.attemptCount;
+					error = `Invalid password. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`;
 				}
 			}
+		} catch (err) {
+			error = 'An error occurred. Please try again.';
+			console.error(err);
+		} finally {
 			loading = false;
-		}, 500); // Small delay to prevent brute force
+		}
 	}
 </script>
 
