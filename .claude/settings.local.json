@@ -5,7 +5,8 @@
       "Bash(node:*)",
       "Bash(npm:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Read(//mnt/c/Users/jtybo/Pictures/Screenshots/**)"
     ],
     "deny": [],
     "ask": []
