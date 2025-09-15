@@ -5,7 +5,7 @@
 	import { cache, cacheKeys } from '$lib/api/cache';
 	import { CACHE_DURATION } from '$lib/config/api';
 
-	let playerId = $page.params.id;
+	const playerId = $page.params.id;
 	let player = $state<Player | null>(null);
 	let matches = $state<Match[]>([]);
 	let loading = $state(true);
@@ -13,6 +13,12 @@
 	let refreshing = $state(false);
 
 	async function loadPlayerData(useCache = true) {
+		if (!playerId) {
+			error = 'No player ID provided';
+			loading = false;
+			return;
+		}
+
 		try {
 			loading = true;
 			error = '';
@@ -62,8 +68,8 @@
 		loadPlayerData();
 	});
 
-	// Calculate KDA
-	$: kda = player ? ((player.wins || 0) / Math.max(1, player.losses || 1)).toFixed(2) : '-';
+	// Calculate KDA using derived
+	const kda = $derived(player ? ((player.wins || 0) / Math.max(1, player.losses || 1)).toFixed(2) : '-');
 </script>
 
 <svelte:head>
