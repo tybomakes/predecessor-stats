@@ -5,7 +5,7 @@ import { AUTH_CONFIG, ENV_PASSWORD } from '$lib/config/auth.config';
 
 // Use environment variable if available, otherwise use a default
 // FOR SECURITY: Set VITE_ACCESS_PASSWORD in your .env.local file
-const ACCESS_PASSWORD = ENV_PASSWORD || 'tacotaco';
+const ACCESS_PASSWORD = ENV_PASSWORD || 'BLG';
 
 interface AuthState {
 	isAuthenticated: boolean;
