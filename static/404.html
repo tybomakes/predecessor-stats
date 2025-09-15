@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Predecessor Stats</title>
+    <script>
+      // GitHub Pages 404 redirect for SPA routing
+      // This script takes the current location and replaces the pathname
+      // to work with the SPA routing
+      const pathSegmentsToKeep = 1; // For /predecessor-stats/
+
+      const location = window.location;
+      const base = location.pathname.split('/').slice(0, pathSegmentsToKeep + 1).join('/');
+
+      if (location.pathname.indexOf(base) === 0 && location.pathname !== base + '/') {
+        // Already has the correct base path
+        // Store the route for later use
+        sessionStorage.setItem('redirect', location.pathname.slice(base.length));
+        // Redirect to the base URL
+        location.replace(base + '/');
+      }
+    </script>
+  </head>
+  <body>
+    Loading...
+  </body>
+</html>

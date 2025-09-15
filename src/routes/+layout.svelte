@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import AuthGuard from '$lib/components/AuthGuard.svelte';
 	import { auth, isAuthenticated } from '$lib/stores/auth';
 
@@ -18,7 +19,7 @@
 		<header class="border-b border-predecessor-border bg-predecessor-dark/50 backdrop-blur-sm sticky top-0 z-50">
 			<div class="container mx-auto px-4">
 				<nav class="flex items-center justify-between h-16">
-					<a href="/" class="flex items-center space-x-2">
+					<a href="{base}/" class="flex items-center space-x-2">
 						<span class="text-2xl font-bold bg-gradient-to-r from-predecessor-orange to-amber-500 bg-clip-text text-transparent">
 							Predecessor Stats
 						</span>
@@ -26,9 +27,9 @@
 
 					<div class="flex items-center space-x-4">
 						<a
-							href="/"
+							href="{base}/"
 							class="px-4 py-2 rounded-lg hover:bg-predecessor-card transition-colors"
-							class:bg-predecessor-card={$page.url.pathname === '/'}
+							class:bg-predecessor-card={$page.url.pathname === `${base}/` || $page.url.pathname === base || ($page.url.pathname === '/' && !base)}
 						>
 							Dashboard
 						</a>

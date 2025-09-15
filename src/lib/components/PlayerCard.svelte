@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import type { TrackedUser } from '$lib/config/users';
 
 	interface Props {
@@ -9,7 +10,7 @@
 </script>
 
 <a
-	href="/player/{user.id}"
+	href="{base}/player/{user.id}"
 	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-6 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10"
 >
 	<div class="flex items-center justify-between mb-4">
