@@ -2,8 +2,9 @@ import { API_BASE_URL } from '$lib/config/api';
 import { browser } from '$app/environment';
 
 // CORS Proxy configuration - only use in browser
-// Using api.allorigins.win which handles bot protection better
-const CORS_PROXY = 'https://api.allorigins.win/get?url=';
+// Note: Omeda.city has Cloudflare protection that blocks most proxies
+// For production, you'll need to set up your own backend proxy server
+const CORS_PROXY = 'https://cors.proxy.consumet.org/';
 
 // Types
 export interface Player {
