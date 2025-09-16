@@ -2,8 +2,8 @@ import { API_BASE_URL } from '$lib/config/api';
 import { browser } from '$app/environment';
 
 // CORS Proxy configuration - only use in browser
-// Using corsproxy.io which is designed for API requests
-const CORS_PROXY = 'https://corsproxy.io/?';
+// Using api.allorigins.win which handles bot protection better
+const CORS_PROXY = 'https://api.allorigins.win/get?url=';
 
 // Types
 export interface Player {
@@ -89,16 +89,16 @@ async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Prom
 
 	try {
 		// Use CORS proxy when in browser environment
-		// This is necessary because Omeda.city API doesn't allow browser CORS requests
+		// allorigins.win returns wrapped response with 'contents' field
 		const finalUrl = browser
-			? `${CORS_PROXY}${url.toString()}`
+			? `${CORS_PROXY}${encodeURIComponent(url.toString())}`
 			: url.toString();
 
 		const fetchOptions = buildFetchOptions();
 
 		// Add timeout to prevent hanging requests
 		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+		const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
 		const response = await fetch(finalUrl, {
 			...fetchOptions,
@@ -113,25 +113,17 @@ async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Prom
 
 		const data = await response.json();
 
-		// Some CORS proxies wrap the response, check if we need to unwrap
-		if (data && typeof data === 'object' && 'contents' in data) {
-			// If the proxy wraps the response, extract the actual data
-			const contents = typeof data.contents === 'string'
-				? JSON.parse(data.contents)
-				: data.contents;
-			return contents;
+		// allorigins.win wraps the response
+		if (browser && data && typeof data === 'object' && 'contents' in data) {
+			// Parse the actual JSON from the contents field
+			const actualData = JSON.parse(data.contents);
+			return actualData;
 		}
 
 		return data;
 	} catch (error) {
 		console.error(`Failed to fetch ${endpoint}:`, error);
-
-		// Provide more helpful error messages
-		if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-			throw new Error('Network error: Unable to reach the API. The CORS proxy may be down. Please try again later.');
-		}
-
-		throw error;
+		throw new Error('Unable to fetch data. Please try again later.');
 	}
 }
 
