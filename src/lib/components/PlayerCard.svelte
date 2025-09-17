@@ -57,7 +57,7 @@
 
 <a
 	href="{base}/player/{user.id}"
-	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-5 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10 group"
+	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-4 sm:p-5 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10 group"
 >
 	<div class="flex flex-col items-center text-center">
 		<!-- Player Name at Top -->

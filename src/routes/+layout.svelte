@@ -20,29 +20,29 @@
 			<div class="container mx-auto px-4">
 				<nav class="flex items-center justify-between h-16">
 					<a href="{base}/" class="flex items-center space-x-2">
-						<span class="text-2xl font-bold bg-gradient-to-r from-predecessor-orange to-amber-500 bg-clip-text text-transparent">
+						<span class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-predecessor-orange to-amber-500 bg-clip-text text-transparent">
 							Predecessor Stats
 						</span>
 					</a>
 
-					<div class="flex items-center space-x-4">
+					<div class="flex items-center space-x-2 sm:space-x-4">
 						<a
 							href="{base}/"
-							class="px-4 py-2 rounded-lg hover:bg-predecessor-card transition-colors"
+							class="px-2 sm:px-4 py-2 rounded-lg hover:bg-predecessor-card transition-colors text-sm sm:text-base"
 							class:bg-predecessor-card={$page.url.pathname === `${base}/` || $page.url.pathname === base || ($page.url.pathname === '/' && !base)}
 						>
 							Dashboard
 						</a>
 						<a
 							href="{base}/admin"
-							class="px-4 py-2 rounded-lg hover:bg-predecessor-card transition-colors"
+							class="px-2 sm:px-4 py-2 rounded-lg hover:bg-predecessor-card transition-colors text-sm sm:text-base"
 							class:bg-predecessor-card={$page.url.pathname === `${base}/admin`}
 						>
 							Admin
 						</a>
 						<button
 							onclick={handleLogout}
-							class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+							class="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
 						>
 							Logout
 						</button>

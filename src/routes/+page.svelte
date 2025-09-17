@@ -70,11 +70,11 @@
 
 <div class="space-y-8">
 	<!-- Hero Section -->
-	<div class="text-center py-12">
-		<h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-predecessor-orange to-amber-500 bg-clip-text text-transparent">
+	<div class="text-center py-8 sm:py-12 px-4">
+		<h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-predecessor-orange to-amber-500 bg-clip-text text-transparent">
 			Predecessor Stats Tracker
 		</h1>
-		<p class="text-xl text-gray-400">Track your stats, analyze matches, and improve your gameplay</p>
+		<p class="text-lg sm:text-xl text-gray-400">Track your stats, analyze matches, and improve your gameplay</p>
 	</div>
 
 	<!-- Users Grid - 4 cards per row -->
@@ -86,7 +86,7 @@
 			</div>
 		</div>
 	{:else}
-		<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto">
 			{#each sortedUsers as user}
 				<PlayerCard {user} />
 			{/each}
