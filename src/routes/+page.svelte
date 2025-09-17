@@ -26,8 +26,8 @@
 		<p class="text-xl text-gray-400">Track your stats, analyze matches, and improve your gameplay</p>
 	</div>
 
-	<!-- Users Grid -->
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+	<!-- Users Grid - Optimized for 8 players -->
+	<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
 		{#each users as user}
 			<PlayerCard {user} />
 		{/each}

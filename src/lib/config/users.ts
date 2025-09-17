@@ -9,7 +9,13 @@ export const TRACKED_USERS: TrackedUser[] = [
 	{
 		id: 'fe580209-fb5f-402b-a720-9260259e92c8',
 		name: 'Madman2024',
-		displayName: 'Madman2024'
+		displayName: 'Main Account'
 	},
-	// Add more users here as needed
+	// Add more player IDs here
+	// Example format:
+	// {
+	//   id: 'player-uuid-here',
+	//   name: 'PlayerName',
+	//   displayName: 'Display Name'
+	// },
 ];
