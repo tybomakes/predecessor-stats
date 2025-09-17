@@ -384,7 +384,7 @@
 									{#each dawnTeam as player}
 										{@const isOurPlayer = player.player_id === playerId}
 										{@const heroImage = heroes.find(h => h.display_name === player.hero_name || h.name === player.hero_name)}
-										<div class="flex items-center justify-between p-2 rounded" class:bg-blue-500/10={isOurPlayer}>
+										<div class="flex items-center justify-between p-2 rounded {isOurPlayer ? 'bg-blue-500/10' : ''}">
 											<div class="flex items-center space-x-3">
 												{#if heroImage?.image || heroImage?.image_url}
 													<img
@@ -422,7 +422,7 @@
 										{@const isOurPlayer = player.player_id === playerId}
 										{@const heroImage = heroes.find(h => h.display_name === player.hero_name || h.name === player.hero_name)}
 										{@const buildData = opponentBuilds.get(player.player_id)}
-										<div class="flex items-center justify-between p-2 rounded" class:bg-purple-500/10={isOurPlayer}>
+										<div class="flex items-center justify-between p-2 rounded {isOurPlayer ? 'bg-purple-500/10' : ''}">
 											<div class="flex items-center space-x-3">
 												{#if heroImage?.image || heroImage?.image_url}
 													<img
