@@ -10,6 +10,7 @@
 	let users = $state<TrackedUser[]>([]);
 	let playersData = $state<Map<string, Player>>(new Map());
 	let sortedUsers = $state<TrackedUser[]>([]);
+	let loading = $state(true);
 
 	// Subscribe to tracked users store
 	$effect(() => {
@@ -23,6 +24,12 @@
 
 	// Load player data for sorting by rank
 	async function loadPlayersData(usersList: TrackedUser[]) {
+		if (usersList.length === 0) {
+			loading = false;
+			return;
+		}
+
+		loading = true;
 		for (const user of usersList) {
 			try {
 				const playerData = await omedaAPI.getPlayer(user.id);
@@ -32,6 +39,7 @@
 			}
 		}
 		sortUsersByRank();
+		loading = false;
 	}
 
 	// Sort users by rank (higher VP first)
@@ -70,16 +78,25 @@
 	</div>
 
 	<!-- Users Grid - 4 cards per row -->
-	<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-		{#each sortedUsers as user}
-			<PlayerCard {user} />
-		{/each}
-
-		{#if sortedUsers.length === 0}
-			<div class="col-span-full text-center py-12">
-				<p class="text-gray-400 text-lg">No users configured yet</p>
-				<p class="text-gray-500 mt-2">Go to Admin to add players</p>
+	{#if loading}
+		<div class="flex items-center justify-center py-12">
+			<div class="text-center">
+				<div class="animate-spin text-4xl mb-4 text-predecessor-orange">⚡</div>
+				<p class="text-gray-400">Loading players...</p>
 			</div>
-		{/if}
-	</div>
+		</div>
+	{:else}
+		<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+			{#each sortedUsers as user}
+				<PlayerCard {user} />
+			{/each}
+
+			{#if sortedUsers.length === 0}
+				<div class="col-span-full text-center py-12">
+					<p class="text-gray-400 text-lg">No users configured yet</p>
+					<p class="text-gray-500 mt-2">Go to Admin to add players</p>
+				</div>
+			{/if}
+		</div>
+	{/if}
 </div>
