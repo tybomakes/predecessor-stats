@@ -183,6 +183,21 @@
 		onSave(build);
 	}
 
+	function handleCancel() {
+		// Reset form if canceling new build creation
+		if (!existingBuild) {
+			title = '';
+			selectedHeroId = 0;
+			selectedRole = 'carry';
+			selectedItems = [];
+			notes = '';
+			description = '';
+			skillOrder = [];
+			currentStep = 1;
+		}
+		onClose();
+	}
+
 	onMount(() => {
 		if (selectedHeroId) {
 			loadHeroAbilities();
@@ -190,18 +205,13 @@
 	});
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div
-	class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-	onclick={(e) => e.target === e.currentTarget && onClose()}
->
-	<div class="bg-predecessor-darker rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+<div class="bg-predecessor-darker rounded-lg border border-predecessor-border">
 		<!-- Header -->
 		<div class="bg-predecessor-dark border-b border-predecessor-border p-4">
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="text-xl font-bold">{existingBuild ? 'Edit Build' : 'Create New Build'}</h2>
 				<button
-					onclick={onClose}
+					onclick={handleCancel}
 					class="p-2 hover:bg-predecessor-card rounded-lg transition-colors"
 					aria-label="Close"
 				>
@@ -231,16 +241,16 @@
 
 			<div class="text-sm text-gray-400 mt-2">
 				Step {currentStep} of {totalSteps}:
-				{currentStep === 1 && 'Build Title'}
-				{currentStep === 2 && 'Select Hero & Role'}
-				{currentStep === 3 && 'Choose Items'}
-				{currentStep === 4 && 'Skill Order'}
-				{currentStep === 5 && 'Notes & Review'}
+				{currentStep === 1 ? 'Build Title' :
+				 currentStep === 2 ? 'Select Hero & Role' :
+				 currentStep === 3 ? 'Choose Items' :
+				 currentStep === 4 ? 'Skill Order' :
+				 'Notes & Review'}
 			</div>
 		</div>
 
 		<!-- Content -->
-		<div class="flex-1 overflow-y-auto p-6">
+		<div class="p-6 min-h-[400px]">
 			{#if currentStep === 1}
 				<!-- Step 1: Build Title -->
 				<div class="space-y-4">
@@ -569,7 +579,7 @@
 
 			<div class="flex gap-2">
 				<button
-					onclick={onClose}
+					onclick={handleCancel}
 					class="px-4 py-2 bg-predecessor-darker rounded-lg hover:bg-predecessor-border transition-colors"
 				>
 					Cancel
@@ -592,6 +602,5 @@
 					</button>
 				{/if}
 			</div>
-		</div>
 	</div>
 </div>

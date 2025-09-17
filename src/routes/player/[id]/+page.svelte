@@ -711,34 +711,47 @@
 						<p class="text-gray-400 text-center py-8">No recent matches found</p>
 					{/if}
 				{:else if activeTab === 'builds'}
-					<!-- Builds Section -->
-					<div class="flex items-center justify-between mb-4">
-						<h3 class="text-lg font-semibold">My Builds</h3>
-						<button
-							onclick={() => showBuildCreator = true}
-							class="px-4 py-2 bg-predecessor-orange text-black font-semibold rounded-lg hover:bg-predecessor-orange/80 transition-colors"
-						>
-							+ Create Build
-						</button>
-					</div>
+					{#if showBuildCreator}
+						<!-- Build Creator -->
+						<BuildCreator
+							{heroes}
+							{items}
+							existingBuild={editingBuild}
+							onSave={saveBuild}
+							onClose={() => {
+								showBuildCreator = false;
+								editingBuild = null;
+							}}
+						/>
+					{:else}
+						<!-- Builds List Section -->
+						<div class="flex items-center justify-between mb-4">
+							<h3 class="text-lg font-semibold">My Builds</h3>
+							<button
+								onclick={() => showBuildCreator = true}
+								class="px-4 py-2 bg-predecessor-orange text-black font-semibold rounded-lg hover:bg-predecessor-orange/80 transition-colors"
+							>
+								+ Create Build
+							</button>
+						</div>
 
-					<!-- Hero Filter -->
-					<div class="mb-4">
-						<select
-							bind:value={selectedHeroFilter}
-							class="bg-predecessor-dark border border-predecessor-border rounded-lg px-4 py-2 text-sm"
-						>
-							<option value="">All Heroes</option>
-							{#each heroes as hero}
-								<option value={hero.id}>{hero.display_name}</option>
-							{/each}
-						</select>
-					</div>
+						<!-- Hero Filter -->
+						<div class="mb-4">
+							<select
+								bind:value={selectedHeroFilter}
+								class="bg-predecessor-dark border border-predecessor-border rounded-lg px-4 py-2 text-sm"
+							>
+								<option value="">All Heroes</option>
+								{#each heroes as hero}
+									<option value={hero.id}>{hero.display_name}</option>
+								{/each}
+							</select>
+						</div>
 
-					<!-- Builds List -->
-					{#if filteredBuilds.length > 0}
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							{#each filteredBuilds as build}
+						<!-- Builds List -->
+						{#if filteredBuilds.length > 0}
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								{#each filteredBuilds as build}
 								{@const hero = heroes.find(h => h.id === build.hero_id)}
 								<div class="bg-predecessor-dark rounded-lg p-4">
 									<div class="flex items-start justify-between mb-3">
@@ -780,12 +793,13 @@
 										Edit Build
 									</button>
 								</div>
-							{/each}
-						</div>
-					{:else}
-						<p class="text-gray-400 text-center py-8">
-							{selectedHeroFilter ? 'No builds found for this hero' : 'No builds created yet'}
-						</p>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-gray-400 text-center py-8">
+								{selectedHeroFilter ? 'No builds found for this hero' : 'No builds created yet'}
+							</p>
+						{/if}
 					{/if}
 				{/if}
 			</div>
@@ -802,16 +816,3 @@
 	/>
 {/if}
 
-<!-- Build Creator Modal -->
-{#if showBuildCreator}
-	<BuildCreator
-		{heroes}
-		{items}
-		existingBuild={editingBuild}
-		onSave={saveBuild}
-		onClose={() => {
-			showBuildCreator = false;
-			editingBuild = null;
-		}}
-	/>
-{/if}
