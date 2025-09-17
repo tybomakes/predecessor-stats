@@ -303,7 +303,11 @@
 		if (db.isConfigured()) {
 			if (editingBuild) {
 				// Update existing build in Supabase
-				const success = await db.updateBuild(editingBuild.id, build);
+				const updateData = {
+					...build,
+					name: build.title || build.name  // Ensure we have name field for database
+				};
+				const success = await db.updateBuild(editingBuild.id, updateData);
 				if (success) {
 					const index = userBuilds.findIndex(b => b.id === editingBuild.id);
 					if (index !== -1) {
@@ -315,7 +319,7 @@
 				console.log('Creating new build in Supabase for player:', playerId);
 				const newBuild = await db.createBuild({
 					player_id: playerId,
-					name: build.name,
+					name: build.title || build.name,  // Support both title and name fields
 					hero_id: build.hero_id,
 					role: build.role,
 					items: build.items,
