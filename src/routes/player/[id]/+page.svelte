@@ -327,12 +327,25 @@
 	// Get player's favorite (most played) hero
 	const favoriteHero = $derived(() => {
 		if (!heroStats || heroStats.length === 0) return null;
-		// Sort by games played and get the top one
-		const sorted = [...heroStats].sort((a, b) => (b.games_played || 0) - (a.games_played || 0));
-		if (sorted.length === 0) return null;
+		// Sort by games played (handle both games_played and total_games fields)
+		const sorted = [...heroStats].sort((a, b) => {
+			const aGames = a.games_played || a.total_games || 0;
+			const bGames = b.games_played || b.total_games || 0;
+			return bGames - aGames;
+		});
+		if (sorted.length === 0 || sorted[0].games_played === 0) return null;
 		const heroId = sorted[0].hero_id;
 		return heroes.find(h => h.id === heroId) || null;
 	});
+
+	// Helper to format game mode names
+	function formatGameMode(mode: string | undefined): string {
+		if (!mode) return 'PVP';
+		// Convert TEAM_VS_TEAM_RUSH to Nitro
+		if (mode === 'TEAM_VS_TEAM_RUSH') return 'Nitro';
+		// Convert underscores to spaces and capitalize words
+		return mode.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+	}
 </script>
 
 <svelte:head>
@@ -416,27 +429,27 @@
 			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Games</p>
-					<p class="text-2xl font-bold">{player.games_played || player.total_matches_played || playerStats?.games_played || 0}</p>
+					<p class="text-2xl font-bold">{player.total_matches_played || player.games_played || playerStats?.games_played || playerStats?.total_matches_played || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Wins</p>
-					<p class="text-2xl font-bold text-green-500">{player.wins || player.total_matches_won || playerStats?.matches_won || 0}</p>
+					<p class="text-2xl font-bold text-green-500">{player.total_matches_won || player.wins || playerStats?.wins || playerStats?.matches_won || playerStats?.total_matches_won || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Losses</p>
-					<p class="text-2xl font-bold text-red-500">{player.losses || player.total_matches_lost || playerStats?.matches_lost || 0}</p>
+					<p class="text-2xl font-bold text-red-500">{player.total_matches_lost || player.losses || playerStats?.losses || playerStats?.matches_lost || playerStats?.total_matches_lost || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">24hr W/L</p>
 					<p class="text-2xl font-bold">
-						<span class="text-green-500">{player.last_24_hours_wins || playerStats?.last_24_hours_wins || 0}</span>
+						<span class="text-green-500">{player.last_24_hours_wins || playerStats?.last_24_hours_wins || playerStats?.wins_24h || 0}</span>
 						<span class="text-gray-400">/</span>
-						<span class="text-red-500">{player.last_24_hours_losses || playerStats?.last_24_hours_losses || 0}</span>
+						<span class="text-red-500">{player.last_24_hours_losses || playerStats?.last_24_hours_losses || playerStats?.losses_24h || 0}</span>
 					</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Avg KDA</p>
-					<p class="text-2xl font-bold">{player.kda_ratio || playerStats?.kda_ratio || playerStats?.avg_kda_ratio || '-'}</p>
+					<p class="text-2xl font-bold">{player.avg_kda_ratio || player.kda_ratio || playerStats?.avg_kda_ratio || playerStats?.kda_ratio || '-'}</p>
 				</div>
 			</div>
 		</div>
@@ -506,7 +519,7 @@
 
 						<div class="bg-predecessor-dark rounded-lg p-4 mb-6">
 							<div class="flex items-center justify-between mb-2">
-								<p class="text-sm text-gray-400">Game Mode: {currentMatch.game_mode}</p>
+								<p class="text-sm text-gray-400">Game Mode: {formatGameMode(currentMatch.game_mode)}</p>
 								<p class="text-sm text-gray-400">Duration: {Math.floor(currentMatch.game_duration / 60)}m</p>
 							</div>
 							<p class="text-xs text-gray-500">Started: {new Date(currentMatch.started_at || currentMatch.start_time || '').toLocaleTimeString()}</p>
@@ -682,7 +695,7 @@
 												{isWin ? 'Victory' : 'Defeat'}
 											</div>
 											<div class="mt-2 text-center">
-												<p class="text-xs text-gray-400 uppercase">{match.game_mode || 'PVP'}</p>
+												<p class="text-xs text-gray-400 uppercase">{formatGameMode(match.game_mode)}</p>
 												{#if playerMatch?.vp_change !== undefined && playerMatch.vp_change !== 0}
 													<p class="text-sm font-semibold {playerMatch.vp_change > 0 ? 'text-green-400' : 'text-red-400'}">
 														{playerMatch.vp_change > 0 ? '+' : ''}{playerMatch.vp_change} VP
@@ -739,7 +752,7 @@
 
 													<!-- Damage -->
 													<div class="text-center">
-														<p class="text-lg font-bold text-orange-500">{((playerMatch?.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k</p>
+														<p class="text-lg font-bold text-orange-500">{((playerMatch?.damage_dealt_to_heroes || playerMatch?.damage_dealt || playerMatch?.total_damage || 0) / 1000).toFixed(1)}k</p>
 														<p class="text-xs text-gray-400">Damage</p>
 													</div>
 

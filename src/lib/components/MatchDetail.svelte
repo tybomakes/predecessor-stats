@@ -30,6 +30,15 @@
 		return `${minutes}m ${secs}s`;
 	}
 
+	// Helper to format game mode names
+	function formatGameMode(mode: string | undefined): string {
+		if (!mode) return 'PVP';
+		// Convert TEAM_VS_TEAM_RUSH to Nitro
+		if (mode === 'TEAM_VS_TEAM_RUSH') return 'Nitro';
+		// Convert underscores to spaces and capitalize words
+		return mode.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+	}
+
 	onMount(async () => {
 		try {
 			// Load hero and item data
@@ -62,7 +71,7 @@
 				<div>
 					<h2 class="text-xl font-bold">Match Details</h2>
 					<div class="flex items-center gap-4 text-sm text-gray-400 mt-1">
-						<span>{match.game_mode}</span>
+						<span>{formatGameMode(match.game_mode)}</span>
 						<span>•</span>
 						<span>{formatDuration(match.game_duration)}</span>
 						<span>•</span>
