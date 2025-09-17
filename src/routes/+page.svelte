@@ -3,18 +3,50 @@
 	import PlayerCard from '$lib/components/PlayerCard.svelte';
 	import { trackedUsersStore } from '$lib/stores/trackedUsers';
 	import { gameData } from '$lib/api/gameData';
+	import { omedaAPI } from '$lib/api/omeda';
 	import type { TrackedUser } from '$lib/config/users';
+	import type { Player } from '$lib/api/omeda';
 
 	let users = $state<TrackedUser[]>([]);
+	let playersData = $state<Map<string, Player>>(new Map());
+	let sortedUsers = $state<TrackedUser[]>([]);
 
 	// Subscribe to tracked users store
 	$effect(() => {
 		const unsubscribe = trackedUsersStore.subscribe(value => {
 			users = value;
+			loadPlayersData(value);
 		});
 
 		return unsubscribe;
 	});
+
+	// Load player data for sorting by rank
+	async function loadPlayersData(usersList: TrackedUser[]) {
+		for (const user of usersList) {
+			try {
+				const playerData = await omedaAPI.getPlayer(user.id);
+				playersData.set(user.id, playerData);
+			} catch (error) {
+				console.error(`Failed to load data for ${user.id}:`, error);
+			}
+		}
+		sortUsersByRank();
+	}
+
+	// Sort users by rank (higher VP first)
+	function sortUsersByRank() {
+		sortedUsers = [...users].sort((a, b) => {
+			const playerA = playersData.get(a.id);
+			const playerB = playersData.get(b.id);
+
+			// Sort by VP total (higher first)
+			const vpA = playerA?.vp_total || 0;
+			const vpB = playerB?.vp_total || 0;
+
+			return vpB - vpA;
+		});
+	}
 
 	// Preload game data and load users from storage
 	onMount(() => {
@@ -37,16 +69,16 @@
 		<p class="text-xl text-gray-400">Track your stats, analyze matches, and improve your gameplay</p>
 	</div>
 
-	<!-- Users Grid - Optimized for 8 players -->
-	<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
-		{#each users as user}
+	<!-- Users Grid - Organized in rows -->
+	<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+		{#each sortedUsers as user}
 			<PlayerCard {user} />
 		{/each}
 
-		{#if users.length === 0}
+		{#if sortedUsers.length === 0}
 			<div class="col-span-full text-center py-12">
 				<p class="text-gray-400 text-lg">No users configured yet</p>
-				<p class="text-gray-500 mt-2">Add users to start tracking stats</p>
+				<p class="text-gray-500 mt-2">Go to Admin to add players</p>
 			</div>
 		{/if}
 	</div>

@@ -57,12 +57,14 @@
 
 <a
 	href="{base}/player/{user.id}"
-	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-4 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10 group"
+	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-5 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10 group"
 >
 	<div class="flex flex-col items-center text-center">
 		<!-- Player Name at Top -->
-		<h3 class="text-lg font-bold mb-3 truncate w-full px-2">
-			{playerData?.display_name || user.displayName}
+		<h3 class="text-base font-bold mb-3 w-full px-1" title={playerData?.display_name || user.displayName}>
+			<span class="block truncate">
+				{playerData?.display_name || user.displayName}
+			</span>
 		</h3>
 
 		<!-- Rank Badge with Image (Larger) -->
