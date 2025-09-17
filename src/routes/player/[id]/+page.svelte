@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { omedaAPI, type Player, type Match, type Hero } from '$lib/api/omeda';
+	import { omedaAPI, type Player, type Match, type Hero, type Build } from '$lib/api/omeda';
 	import { cache, cacheKeys } from '$lib/api/cache';
 	import { CACHE_DURATION, getImageUrl } from '$lib/config/api';
 	import { gameData } from '$lib/api/gameData';
+	import BuildRecommendation from '$lib/components/BuildRecommendation.svelte';
 
 	const playerId = $page.params.id;
 	let player = $state<Player | null>(null);
@@ -128,18 +129,50 @@
 					filter: { hero_id: opponent.hero_id }
 				});
 
-				// Get builds for this hero
-				const builds = await omedaAPI.getBuilds({
-					filter: {
-						player_id: opponent.player_id,
-						hero_id: opponent.hero_id
+				// First try to get player-specific builds for this hero
+				let builds: Build[] = [];
+
+				try {
+					// Try to get builds by this player for this specific hero
+					const playerBuilds = await omedaAPI.getBuilds({
+						filter: {
+							player_id: opponent.player_id,
+							hero_id: opponent.hero_id
+						}
+					});
+
+					if (playerBuilds && playerBuilds.length > 0) {
+						builds = playerBuilds.slice(0, 2); // Get top 2 player builds
+						console.log(`Found ${playerBuilds.length} builds by ${opponent.player_name} for ${opponent.hero_name}`);
 					}
-				});
+				} catch (error) {
+					console.error(`Failed to get player builds for ${opponent.player_name}:`, error);
+				}
+
+				// If no player-specific builds, get popular builds for this hero/role
+				if (builds.length === 0) {
+					try {
+						const popularBuilds = await omedaAPI.getBuilds({
+							filter: {
+								hero_id: opponent.hero_id,
+								role: opponent.role,
+								order: 'popular'
+							}
+						});
+
+						if (popularBuilds && popularBuilds.length > 0) {
+							builds = popularBuilds.slice(0, 2); // Get top 2 popular builds
+							console.log(`Using popular builds for ${opponent.hero_name} (${opponent.role})`);
+						}
+					} catch (error) {
+						console.error(`Failed to get popular builds for ${opponent.hero_name}:`, error);
+					}
+				}
 
 				opponentBuilds.set(opponent.player_id, {
 					player: opponent,
 					recentMatches: heroMatches.matches || [],
-					builds: builds.builds || []
+					builds: builds
 				});
 			} catch (error) {
 				console.error(`Failed to load builds for ${opponent.player_name}:`, error);
@@ -462,22 +495,56 @@
 										{@const opponent = data.player}
 										{#if opponent.team !== ourPlayer.team}
 											<div class="bg-predecessor-dark rounded-lg p-4">
-												<p class="font-semibold mb-2">{opponent.player_name} - {opponent.hero_name}</p>
-												<p class="text-sm text-gray-400 mb-2">Recent performance with this hero:</p>
-												{#if data.recentMatches.length > 0}
-													<div class="text-xs space-y-1">
-														{#each data.recentMatches.slice(0, 3) as match}
-															{@const playerData = match.players?.find(p => p.player_id === playerId)}
-															{#if playerData}
-																<p>
-																	KDA: {playerData.kills}/{playerData.deaths}/{playerData.assists}
-																	• {((playerData.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k dmg
-																</p>
-															{/if}
-														{/each}
+												<div class="flex items-start justify-between mb-2">
+													<div>
+														<p class="font-semibold">{opponent.player_name}</p>
+														<p class="text-sm text-gray-400">{opponent.hero_name} • {opponent.role}</p>
 													</div>
-												{:else}
-													<p class="text-xs text-gray-500">No recent matches found</p>
+													{#if opponent.rank_title}
+														<span class="text-xs px-2 py-1 bg-predecessor-border rounded">
+															{opponent.rank_title}
+														</span>
+													{/if}
+												</div>
+
+												<!-- Recent Performance -->
+												<div class="mb-3">
+													<p class="text-sm text-gray-400 mb-2">Recent performance:</p>
+													{#if data.recentMatches.length > 0}
+														<div class="text-xs space-y-1">
+															{#each data.recentMatches.slice(0, 3) as match}
+																{@const playerData = match.players?.find(p => p.player_id === playerId)}
+																{#if playerData}
+																	<div class="flex items-center justify-between">
+																		<span>
+																			{playerData.kills}/{playerData.deaths}/{playerData.assists} KDA
+																		</span>
+																		<span class="text-gray-500">
+																			{((playerData.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k dmg
+																		</span>
+																	</div>
+																{/if}
+															{/each}
+														</div>
+													{:else}
+														<p class="text-xs text-gray-500">No recent matches found</p>
+													{/if}
+												</div>
+
+												<!-- Build Recommendations -->
+												{#if data.builds && data.builds.length > 0}
+													<div class="border-t border-predecessor-border pt-3">
+														<p class="text-sm text-gray-400 mb-2">
+															{data.builds[0].author_player?.id === opponent.player_id ?
+																"Player's builds:" :
+																"Recommended builds:"}
+														</p>
+														<div class="space-y-2">
+															{#each data.builds as build}
+																<BuildRecommendation {build} compact={true} />
+															{/each}
+														</div>
+													</div>
 												{/if}
 											</div>
 										{/if}

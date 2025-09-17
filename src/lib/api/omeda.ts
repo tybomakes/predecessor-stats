@@ -47,10 +47,32 @@ export interface MatchPlayer {
 	deaths: number;
 	assists: number;
 	minions_killed: number;
+	lane_minions_killed?: number;
+	neutral_minions_killed?: number;
 	gold_earned: number;
+	gold_spent?: number;
+	total_damage_dealt?: number;
+	physical_damage_dealt?: number;
+	magical_damage_dealt?: number;
+	true_damage_dealt?: number;
 	damage_dealt_to_heroes: number;
+	physical_damage_dealt_to_heroes?: number;
+	magical_damage_dealt_to_heroes?: number;
+	true_damage_dealt_to_heroes?: number;
+	total_damage_dealt_to_structures?: number;
+	total_damage_dealt_to_objectives?: number;
 	damage_taken: number;
+	physical_damage_taken?: number;
+	magical_damage_taken?: number;
+	true_damage_taken?: number;
+	total_damage_mitigated?: number;
+	total_healing_done?: number;
+	item_healing_done?: number;
+	total_shielding_received?: number;
 	wards_placed: number;
+	wards_destroyed?: number;
+	largest_killing_spree?: number;
+	largest_multi_kill?: number;
 }
 
 export interface Hero {
@@ -77,6 +99,41 @@ export interface Item {
 	slot_type?: string;
 	rarity?: string;
 	effects?: any[];
+}
+
+export interface Build {
+	id: number;
+	title: string;
+	description?: string;
+	hero_id: number;
+	role: string;
+	crest_id?: number;
+	item1_id?: number;
+	item2_id?: number;
+	item3_id?: number;
+	item4_id?: number;
+	item5_id?: number;
+	item6_id?: number;
+	skill_order?: number[];
+	upvotes_count?: number;
+	downvotes_count?: number;
+	author?: string;
+	author_player?: Player;
+	modules?: BuildModule[];
+	created_at?: string;
+	updated_at?: string;
+	game_version?: any;
+}
+
+export interface BuildModule {
+	title: string;
+	item1_id?: number;
+	item2_id?: number;
+	item3_id?: number;
+	item4_id?: number;
+	item5_id?: number;
+	item6_id?: number;
+	item7_id?: number;
 }
 
 // Fetch options builder
@@ -283,7 +340,7 @@ export const omedaAPI = {
 			modules?: any;
 			order?: 'latest' | 'trending' | 'popular';
 		};
-	}): Promise<any> {
+	}): Promise<Build[]> {
 		const params: any = {};
 
 		if (options?.page) params.page = options.page;
@@ -297,8 +354,8 @@ export const omedaAPI = {
 		return fetchAPI('/builds.json', params);
 	},
 
-	async getBuild(buildId: string): Promise<any> {
-		return fetchAPI(`/builds/${buildId}.json`);
+	async getBuild(buildId: string): Promise<Build> {
+		return fetchAPI<Build>(`/builds/${buildId}.json`);
 	},
 
 	// Leaderboard
