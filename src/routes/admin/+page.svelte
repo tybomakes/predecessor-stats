@@ -2,9 +2,9 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { adminStore } from '$lib/stores/admin';
-	import { trackedUsersStore } from '$lib/stores/trackedUsers';
+	import { supabaseTrackedUsers } from '$lib/stores/supabaseTrackedUsers';
 	import { omedaAPI } from '$lib/api/omeda';
-	import type { TrackedUser } from '$lib/config/users';
+	import type { TrackedPlayer } from '$lib/supabase';
 	import type { Player } from '$lib/api/omeda';
 
 	let isAuthenticated = $state(false);
@@ -12,7 +12,7 @@
 	let loginError = $state('');
 
 	// Admin panel states
-	let users = $state<TrackedUser[]>([]);
+	let users = $state<TrackedPlayer[]>([]);
 	let newPlayerId = $state('');
 	let searchingPlayer = $state(false);
 	let searchError = $state('');
@@ -24,7 +24,7 @@
 			isAuthenticated = value.isAuthenticated;
 		});
 
-		const unsubscribeUsers = trackedUsersStore.subscribe(value => {
+		const unsubscribeUsers = supabaseTrackedUsers.subscribe(value => {
 			users = value;
 		});
 
@@ -37,6 +37,8 @@
 	onMount(() => {
 		// Check if already authenticated
 		adminStore.checkAuth();
+		// Initialize Supabase store
+		supabaseTrackedUsers.init();
 	});
 
 	function handleLogin() {
@@ -79,16 +81,14 @@
 		}
 	}
 
-	function addPlayer() {
+	async function addPlayer() {
 		if (!foundPlayer) return;
 
-		const newUser: TrackedUser = {
-			id: foundPlayer.id,
-			name: foundPlayer.display_name || foundPlayer.name || 'Unknown',
-			displayName: foundPlayer.display_name || foundPlayer.name || 'Unknown'
-		};
-
-		trackedUsersStore.addUser(newUser);
+		await supabaseTrackedUsers.addUser(
+			foundPlayer.display_name || foundPlayer.name || 'Unknown',
+			foundPlayer.id,
+			'na'
+		);
 
 		// Reset form
 		newPlayerId = '';
@@ -96,9 +96,9 @@
 		searchError = '';
 	}
 
-	function removePlayer(userId: string) {
+	async function removePlayer(userId: string) {
 		if (confirm('Are you sure you want to remove this player?')) {
-			trackedUsersStore.removeUser(userId);
+			await supabaseTrackedUsers.removeUser(userId);
 		}
 	}
 </script>
@@ -217,11 +217,11 @@
 							{#each users as user}
 								<div class="flex items-center justify-between bg-predecessor-dark rounded-lg p-4">
 									<div>
-										<h3 class="font-bold">{user.displayName}</h3>
-										<p class="text-sm text-gray-400">ID: {user.id}</p>
+										<h3 class="font-bold">{user.display_name}</h3>
+										<p class="text-sm text-gray-400">ID: {user.player_id}</p>
 									</div>
 									<button
-										onclick={() => removePlayer(user.id)}
+										onclick={() => removePlayer(user.player_id)}
 										class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
 									>
 										Remove
