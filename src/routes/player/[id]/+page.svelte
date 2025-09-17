@@ -101,7 +101,7 @@
 </script>
 
 <svelte:head>
-	<title>{player?.name || 'Loading...'} - Predecessor Stats</title>
+	<title>{player?.display_name || player?.name || 'Loading...'} - Predecessor Stats</title>
 </svelte:head>
 
 <div class="space-y-8">
@@ -129,16 +129,16 @@
 				<div class="flex items-center space-x-6">
 					<!-- Avatar Placeholder -->
 					<div class="w-24 h-24 rounded-lg bg-gradient-to-br from-predecessor-orange/20 to-predecessor-orange/10 flex items-center justify-center border border-predecessor-orange/30">
-						<span class="text-4xl font-bold text-predecessor-orange">{player.name?.charAt(0) || '?'}</span>
+						<span class="text-4xl font-bold text-predecessor-orange">{player.display_name?.charAt(0) || player.name?.charAt(0) || '?'}</span>
 					</div>
 					<div>
-						<h1 class="text-3xl font-bold mb-2">{player.name}</h1>
+						<h1 class="text-3xl font-bold mb-2">{player.display_name || player.name}</h1>
 						<div class="flex items-center space-x-4 text-sm">
 							<span class="text-predecessor-orange font-semibold text-lg">{player.rank_title || 'Unranked'}</span>
-							<span class="text-gray-400">Rank #{player.rank || '-'}</span>
-							<span class="text-gray-400">MMR: {player.mmr || '-'}</span>
-							{#if player.vp !== undefined}
-								<span class="text-gray-400">VP: {player.vp}</span>
+							<span class="text-gray-400">Rank #{player.leaderboard_rank || '-'}</span>
+							<span class="text-gray-400">Top {player.top_percentage || '-'}%</span>
+							{#if player.vp_total !== undefined}
+								<span class="text-gray-400">VP: {player.vp_total}</span>
 							{/if}
 						</div>
 						<div class="flex items-center space-x-4 text-sm text-gray-400 mt-2">

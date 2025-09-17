@@ -4,17 +4,25 @@ import { browser } from '$app/environment';
 // Types
 export interface Player {
 	id: string;
-	name: string;
-	rank: number;
-	rank_title: string;
-	mmr: number;
-	games_played: number;
-	wins: number;
-	losses: number;
-	winrate: number;
-	is_active: boolean;
-	avatar_id: number;
-	last_match_ended_at: string;
+	name?: string;
+	display_name?: string;
+	region?: string;
+	rank?: number;
+	rank_title?: string;
+	rank_image?: string;
+	mmr?: number;
+	leaderboard_rank?: number;
+	top_percentage?: number;
+	vp_total?: number;
+	vp_current?: number;
+	games_played?: number;
+	wins?: number;
+	losses?: number;
+	winrate?: number;
+	is_active?: boolean;
+	avatar_id?: number;
+	last_match_ended_at?: string;
+	flags?: any[];
 }
 
 export interface Match {

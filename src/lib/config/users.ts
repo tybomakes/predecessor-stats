@@ -8,8 +8,8 @@ export interface TrackedUser {
 export const TRACKED_USERS: TrackedUser[] = [
 	{
 		id: 'fe580209-fb5f-402b-a720-9260259e92c8',
-		name: 'YourUsername',
-		displayName: 'Main Account'
+		name: 'Madman2024',
+		displayName: 'Madman2024'
 	},
 	// Add more users here as needed
 ];

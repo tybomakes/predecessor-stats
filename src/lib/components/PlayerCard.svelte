@@ -11,6 +11,7 @@
 
 	let { user }: Props = $props();
 	let playerData = $state<Player | null>(null);
+	let playerStats = $state<any>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
@@ -18,7 +19,13 @@
 		try {
 			loading = true;
 			error = null;
-			playerData = await omedaAPI.getPlayer(user.id);
+			// Fetch both player info and statistics
+			const [player, stats] = await Promise.all([
+				omedaAPI.getPlayer(user.id),
+				omedaAPI.getPlayerStatistics(user.id)
+			]);
+			playerData = player;
+			playerStats = stats;
 		} catch (e) {
 			console.error('Failed to load player data:', e);
 			error = 'Failed to load data';
@@ -34,7 +41,7 @@
 >
 	<div class="flex items-center justify-between mb-4">
 		<div class="w-12 h-12 bg-gradient-to-br from-predecessor-orange to-amber-600 rounded-full flex items-center justify-center">
-			<span class="text-xl font-bold text-white">{user.displayName.charAt(0)}</span>
+			<span class="text-xl font-bold text-white">{playerData?.display_name?.charAt(0) || user.displayName.charAt(0)}</span>
 		</div>
 		<div class="text-right">
 			<span class="text-xs text-gray-500 uppercase tracking-wide">Rank</span>
@@ -50,27 +57,33 @@
 		</div>
 	</div>
 
-	<h3 class="text-xl font-bold mb-1">{user.displayName}</h3>
-	<p class="text-gray-400 text-sm mb-4">{user.name}</p>
+	<h3 class="text-xl font-bold mb-1">{playerData?.display_name || user.displayName}</h3>
+	<p class="text-gray-400 text-sm mb-4">
+		{#if playerData?.leaderboard_rank}
+			Rank #{playerData.leaderboard_rank}
+		{:else}
+			{user.name}
+		{/if}
+	</p>
 
 	<div class="grid grid-cols-3 gap-2 text-center">
 		<div>
 			<p class="text-2xl font-bold text-predecessor-orange">
-				{playerData?.games_played || '-'}
+				{playerStats?.games_played || playerStats?.matches_played || '-'}
 			</p>
 			<p class="text-xs text-gray-500">Games</p>
 		</div>
 		<div>
 			<p class="text-2xl font-bold text-green-500">
-				{playerData ? `${Math.round(playerData.winrate)}%` : '-'}
+				{playerStats?.winrate !== undefined ? `${Math.round(playerStats.winrate)}%` : '-'}
 			</p>
 			<p class="text-xs text-gray-500">Win %</p>
 		</div>
 		<div>
 			<p class="text-2xl font-bold text-blue-500">
-				{playerData?.mmr || '-'}
+				{playerData?.vp_total || '-'}
 			</p>
-			<p class="text-xs text-gray-500">MMR</p>
+			<p class="text-xs text-gray-500">VP</p>
 		</div>
 	</div>
 </a>
