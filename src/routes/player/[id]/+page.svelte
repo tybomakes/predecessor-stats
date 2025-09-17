@@ -10,6 +10,7 @@
 	import BuildCreator from '$lib/components/BuildCreator.svelte';
 	import BuildDetail from '$lib/components/BuildDetail.svelte';
 	import { browser } from '$app/environment';
+	import { db } from '$lib/supabase';
 
 	const playerId = $page.params.id;
 	let player = $state<Player | null>(null);
@@ -259,22 +260,35 @@
 	}
 
 	// Build management functions
-	function loadBuilds() {
-		if (!browser) return;
-		const stored = localStorage.getItem(`builds_${playerId}`);
-		if (stored) {
-			userBuilds = JSON.parse(stored);
+	async function loadBuilds() {
+		if (db.isConfigured()) {
+			// Load from Supabase
+			const builds = await db.getBuilds(playerId);
+			userBuilds = builds;
+		} else if (browser) {
+			// Fallback to localStorage
+			const stored = localStorage.getItem(`builds_${playerId}`);
+			if (stored) {
+				userBuilds = JSON.parse(stored);
+			}
 		}
 	}
 
-	function saveBuilds() {
+	function saveBuildsToLocalStorage() {
 		if (!browser) return;
 		localStorage.setItem(`builds_${playerId}`, JSON.stringify(userBuilds));
 	}
 
-	function deleteBuild(buildId: string) {
-		userBuilds = userBuilds.filter(b => b.id !== buildId);
-		saveBuilds();
+	async function deleteBuild(buildId: string) {
+		if (db.isConfigured()) {
+			const success = await db.deleteBuild(buildId);
+			if (success) {
+				userBuilds = userBuilds.filter(b => b.id !== buildId);
+			}
+		} else {
+			userBuilds = userBuilds.filter(b => b.id !== buildId);
+			saveBuildsToLocalStorage();
+		}
 	}
 
 	function editBuild(build: any) {
@@ -282,19 +296,47 @@
 		showBuildCreator = true;
 	}
 
-	function saveBuild(build: any) {
-		if (editingBuild) {
-			// Update existing build
-			const index = userBuilds.findIndex(b => b.id === editingBuild.id);
-			if (index !== -1) {
-				userBuilds[index] = build;
+	async function saveBuild(build: any) {
+		if (db.isConfigured()) {
+			if (editingBuild) {
+				// Update existing build in Supabase
+				const success = await db.updateBuild(editingBuild.id, build);
+				if (success) {
+					const index = userBuilds.findIndex(b => b.id === editingBuild.id);
+					if (index !== -1) {
+						userBuilds[index] = { ...userBuilds[index], ...build };
+					}
+				}
+			} else {
+				// Create new build in Supabase
+				const newBuild = await db.createBuild({
+					player_id: playerId,
+					name: build.name,
+					hero_id: build.hero_id,
+					role: build.role,
+					items: build.items,
+					skill_order: build.skill_order || [],
+					description: build.description || '',
+					notes: build.notes || '',
+					is_public: false
+				});
+				if (newBuild) {
+					userBuilds = [...userBuilds, newBuild];
+				}
 			}
 		} else {
-			// Add new build
-			build.id = Date.now().toString();
-			userBuilds = [...userBuilds, build];
+			// Fallback to localStorage
+			if (editingBuild) {
+				const index = userBuilds.findIndex(b => b.id === editingBuild.id);
+				if (index !== -1) {
+					userBuilds[index] = build;
+				}
+			} else {
+				build.id = Date.now().toString();
+				userBuilds = [...userBuilds, build];
+			}
+			saveBuildsToLocalStorage();
 		}
-		saveBuilds();
 		showBuildCreator = false;
 		editingBuild = null;
 	}

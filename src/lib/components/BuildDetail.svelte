@@ -88,27 +88,30 @@
 			{#if build.skill_order && build.skill_order.length > 0}
 				<div>
 					<h3 class="text-lg font-semibold mb-3">Skill Order</h3>
-					<div class="bg-predecessor-dark rounded-lg p-4">
-						<div class="grid grid-cols-18 gap-1 text-xs">
-							<!-- Headers -->
-							<div class="font-semibold text-gray-400">Skill</div>
+					<div class="bg-predecessor-dark rounded-lg p-4 overflow-x-auto">
+						<!-- Level headers -->
+						<div class="flex gap-1 mb-2 min-w-fit">
+							<div class="w-12 text-sm font-semibold text-gray-400">Level</div>
 							{#each Array(18) as _, level}
-								<div class="text-center text-gray-400">{level + 1}</div>
-							{/each}
-
-							<!-- Skills -->
-							{#each ['Q', 'E', 'RMB', 'R'] as skill, skillIndex}
-								<div class="font-semibold">{skill}</div>
-								{#each Array(18) as _, level}
-									{@const isSelected = build.skill_order[level] === skillIndex}
-									<div
-										class="w-6 h-6 rounded flex items-center justify-center {isSelected ? 'bg-predecessor-orange text-black font-bold' : 'bg-predecessor-border'}"
-									>
-										{isSelected ? '•' : ''}
-									</div>
-								{/each}
+								<div class="w-7 text-center text-sm text-gray-400">{level + 1}</div>
 							{/each}
 						</div>
+
+						<!-- Skills rows -->
+						{#each ['Q', 'E', 'RMB', 'R'] as skill, skillIndex}
+							<div class="flex gap-1 mb-1 min-w-fit">
+								<div class="w-12 text-sm font-semibold">{skill}</div>
+								{#each Array(18) as _, level}
+									{@const skillAtLevel = build.skill_order[level]}
+									{@const isSelected = skillAtLevel === skill || skillAtLevel === String(skillIndex)}
+									<div
+										class="w-7 h-7 rounded flex items-center justify-center text-xs {isSelected ? 'bg-predecessor-orange text-black font-bold' : 'bg-predecessor-border/30'}"
+									>
+										{isSelected ? '●' : ''}
+									</div>
+								{/each}
+							</div>
+						{/each}
 					</div>
 				</div>
 			{/if}

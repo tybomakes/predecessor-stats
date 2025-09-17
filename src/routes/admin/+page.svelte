@@ -52,6 +52,9 @@
 		if (!success) {
 			loginError = 'Invalid password';
 			password = '';
+		} else {
+			// Force re-check authentication state
+			isAuthenticated = true;
 		}
 	}
 
