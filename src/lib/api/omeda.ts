@@ -209,6 +209,18 @@ export const omedaAPI = {
 		return fetchAPI(`/players/${playerId}/hero_statistics.json`, params);
 	},
 
+	async getPlayerCommonTeammates(playerId: string, options?: {
+		time_frame?: string;
+		count?: number;
+	}): Promise<any> {
+		const params: any = {};
+
+		if (options?.time_frame) params.time_frame = options.time_frame;
+		if (options?.count) params.count = options.count;
+
+		return fetchAPI(`/players/${playerId}/common_teammates.json`, params);
+	},
+
 	// Match endpoints
 	async getMatch(matchId: string): Promise<Match> {
 		return fetchAPI<Match>(`/matches/${matchId}.json`);

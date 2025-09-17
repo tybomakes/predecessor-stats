@@ -12,6 +12,7 @@
 	let playerStats = $state<any>(null);
 	let heroStats = $state<any[]>([]);
 	let heroes = $state<Hero[]>([]);
+	let commonTeammates = $state<any[]>([]);
 	let loading = $state(true);
 	let error = $state('');
 	let refreshing = $state(false);
@@ -43,17 +44,19 @@
 
 			// If no cache or force refresh, fetch from API
 			if (!player || !useCache) {
-				const [playerData, matchData, statsData, heroStatsData] = await Promise.all([
+				const [playerData, matchData, statsData, heroStatsData, teammatesData] = await Promise.all([
 					omedaAPI.getPlayer(playerId),
 					omedaAPI.getPlayerMatches(playerId, { per_page: 20 }),
 					omedaAPI.getPlayerStatistics(playerId),
-					omedaAPI.getPlayerHeroStatistics(playerId)
+					omedaAPI.getPlayerHeroStatistics(playerId),
+					omedaAPI.getPlayerCommonTeammates(playerId, { count: 20 })
 				]);
 
 				player = playerData;
 				matches = matchData.matches || [];
 				playerStats = statsData;
 				heroStats = heroStatsData?.hero_statistics || [];
+				commonTeammates = teammatesData?.teammates || [];
 
 				// Cache the data
 				cache.set(cacheKeys.player(playerId), playerData, CACHE_DURATION);
@@ -232,6 +235,16 @@
 				>
 					Statistics
 				</button>
+				<button
+					onclick={() => activeTab = 'teammates'}
+					class="px-6 py-3 font-semibold transition-colors"
+					class:text-predecessor-orange={activeTab === 'teammates'}
+					class:border-b-2={activeTab === 'teammates'}
+					class:border-predecessor-orange={activeTab === 'teammates'}
+					class:text-gray-400={activeTab !== 'teammates'}
+				>
+					Teammates
+				</button>
 			</div>
 
 			<div class="p-6">
@@ -350,10 +363,22 @@
 														<p class="text-xs text-gray-400">CS</p>
 													</div>
 
+													<!-- Damage -->
+													<div class="text-center">
+														<p class="text-lg font-bold text-orange-500">{((playerMatch?.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k</p>
+														<p class="text-xs text-gray-400">Damage</p>
+													</div>
+
 													<!-- Gold -->
 													<div class="text-center">
 														<p class="text-lg font-bold text-yellow-500">{((playerMatch?.gold_earned || 0) / 1000).toFixed(1)}k</p>
 														<p class="text-xs text-gray-400">Gold</p>
+													</div>
+
+													<!-- Wards -->
+													<div class="text-center">
+														<p class="text-lg font-bold text-cyan-500">{playerMatch?.wards_placed || 0}</p>
+														<p class="text-xs text-gray-400">Wards</p>
 													</div>
 
 													<!-- Time -->
@@ -470,6 +495,38 @@
 						</div>
 					{:else}
 						<p class="text-gray-400 text-center py-8">No statistics available</p>
+					{/if}
+				{:else if activeTab === 'teammates'}
+					<!-- Common Teammates -->
+					<h3 class="text-lg font-semibold mb-4">Common Teammates</h3>
+					{#if commonTeammates && commonTeammates.length > 0}
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							{#each commonTeammates as teammate}
+								<div class="bg-predecessor-dark rounded-lg p-4">
+									<div class="flex items-center justify-between">
+										<div>
+											<p class="font-semibold">{teammate.player_name || 'Unknown'}</p>
+											<p class="text-sm text-gray-400">
+												{teammate.games_played || 0} games together
+											</p>
+											<p class="text-sm">
+												<span class="text-green-500">{teammate.wins || 0}W</span>
+												<span class="text-gray-400"> - </span>
+												<span class="text-red-500">{teammate.losses || 0}L</span>
+											</p>
+										</div>
+										<div class="text-right">
+											<p class="text-2xl font-bold" class:text-green-500={teammate.winrate >= 50} class:text-red-500={teammate.winrate < 50}>
+												{teammate.winrate?.toFixed(1) || 0}%
+											</p>
+											<p class="text-xs text-gray-400">Win Rate</p>
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<p class="text-gray-400 text-center py-8">No teammate data available</p>
 					{/if}
 				{/if}
 			</div>
