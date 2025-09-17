@@ -755,7 +755,7 @@
 
 													<!-- Damage -->
 													<div class="text-center">
-														<p class="text-lg font-bold text-orange-500">{((playerMatch?.damage_dealt_to_heroes || playerMatch?.damage_dealt || playerMatch?.total_damage || 0) / 1000).toFixed(1)}k</p>
+														<p class="text-lg font-bold text-orange-500">{((playerMatch?.total_damage_dealt_to_heroes || playerMatch?.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k</p>
 														<p class="text-xs text-gray-400">Damage</p>
 													</div>
 
