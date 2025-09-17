@@ -19,14 +19,10 @@
 	let heroStats = $state<any[]>([]);
 	let heroes = $state<Hero[]>([]);
 	let commonTeammates = $state<any[]>([]);
-	let currentMatch = $state<Match | null>(null);
-	let opponentBuilds = $state<Map<string, any>>(new Map());
 	let loading = $state(true);
 	let error = $state('');
 	let refreshing = $state(false);
-	let activeTab = $state('current');
-	let autoRefresh = $state(false);
-	let refreshInterval: NodeJS.Timeout | null = null;
+	let activeTab = $state('matches');
 	let selectedMatch = $state<Match | null>(null);
 
 	// Builds state
@@ -142,122 +138,8 @@
 	async function refreshData() {
 		refreshing = true;
 		await loadPlayerData(false);
-		await checkCurrentMatch();
 	}
 
-	async function checkCurrentMatch() {
-		try {
-			// Get the player's most recent match
-			if (!playerId) return;
-			const recentMatches = await omedaAPI.getPlayerMatches(playerId, { per_page: 1 });
-			if (recentMatches.matches && recentMatches.matches.length > 0) {
-				const match = recentMatches.matches[0];
-
-				// Check if match is recent (within last hour)
-				const matchEndTime = new Date(match.end_time || match.ended_at || '').getTime();
-				const matchStartTime = new Date(match.start_time || match.started_at || '').getTime();
-				const now = Date.now();
-
-				// If match started recently and duration suggests it might be ongoing
-				const expectedDuration = 30 * 60 * 1000; // 30 minutes average
-				const matchAge = now - matchStartTime;
-
-				if (matchAge < expectedDuration * 1.5) {
-					currentMatch = match;
-					await loadOpponentBuilds(match);
-				} else {
-					currentMatch = null;
-				}
-			}
-		} catch (error) {
-			console.error('Failed to check current match:', error);
-		}
-	}
-
-	async function loadOpponentBuilds(match: Match) {
-		if (!match.players) return;
-
-		// Find which team our player is on
-		const ourPlayer = match.players.find(p => getPlayerId(p) === playerId);
-		if (!ourPlayer) return;
-
-		const ourTeam = ourPlayer.team;
-		const opponents = match.players.filter(p => p.team !== ourTeam);
-
-		// Load build data for each opponent
-		for (const opponent of opponents) {
-			try {
-				const opponentId = getPlayerId(opponent);
-				// Get the opponent's recent matches with the same hero
-				const heroMatches = await omedaAPI.getPlayerMatches(opponentId, {
-					per_page: 5,
-					filter: { hero_id: opponent.hero_id }
-				});
-
-				// First try to get player-specific builds for this hero
-				let builds: Build[] = [];
-
-				try {
-					// Try to get builds by this player for this specific hero
-					const playerBuilds = await omedaAPI.getBuilds({
-						filter: {
-							player_id: opponentId,
-							hero_id: opponent.hero_id
-						}
-					});
-
-					if (playerBuilds && playerBuilds.length > 0) {
-						builds = playerBuilds.slice(0, 2); // Get top 2 player builds
-						console.log(`Found ${playerBuilds.length} builds by ${getPlayerName(opponent)} for ${opponent.hero_name}`);
-					}
-				} catch (error) {
-					console.error(`Failed to get player builds for ${getPlayerName(opponent)}:`, error);
-				}
-
-				// If no player-specific builds, get popular builds for this hero/role
-				if (builds.length === 0) {
-					try {
-						const popularBuilds = await omedaAPI.getBuilds({
-							filter: {
-								hero_id: opponent.hero_id,
-								role: opponent.role,
-								order: 'popular'
-							}
-						});
-
-						if (popularBuilds && popularBuilds.length > 0) {
-							builds = popularBuilds.slice(0, 2); // Get top 2 popular builds
-							console.log(`Using popular builds for ${opponent.hero_name} (${opponent.role})`);
-						}
-					} catch (error) {
-						console.error(`Failed to get popular builds for ${opponent.hero_name}:`, error);
-					}
-				}
-
-				opponentBuilds.set(opponentId, {
-					player: opponent,
-					recentMatches: heroMatches.matches || [],
-					builds: builds
-				});
-			} catch (error) {
-				console.error(`Failed to load builds for ${getPlayerName(opponent)}:`, error);
-			}
-		}
-	}
-
-	function toggleAutoRefresh() {
-		autoRefresh = !autoRefresh;
-
-		if (autoRefresh) {
-			// Start auto-refresh every 30 seconds
-			refreshInterval = setInterval(() => {
-				checkCurrentMatch();
-			}, 30000);
-		} else if (refreshInterval) {
-			clearInterval(refreshInterval);
-			refreshInterval = null;
-		}
-	}
 
 	// Build management functions
 	async function loadBuilds() {
@@ -366,16 +248,8 @@
 			}
 
 			await loadPlayerData();
-			checkCurrentMatch();
 			loadBuilds();
 		})();
-
-		// Clean up interval on unmount
-		return () => {
-			if (refreshInterval) {
-				clearInterval(refreshInterval);
-			}
-		};
 	});
 
 	// Calculate KDA using derived
@@ -515,16 +389,6 @@
 		<div class="bg-predecessor-card border border-predecessor-border rounded-lg">
 			<div class="flex border-b border-predecessor-border">
 				<button
-					onclick={() => activeTab = 'current'}
-					class="px-6 py-3 font-semibold transition-colors"
-					class:text-predecessor-orange={activeTab === 'current'}
-					class:border-b-2={activeTab === 'current'}
-					class:border-predecessor-orange={activeTab === 'current'}
-					class:text-gray-400={activeTab !== 'current'}
-				>
-					Current Game
-				</button>
-				<button
 					onclick={() => activeTab = 'matches'}
 					class="px-6 py-3 font-semibold transition-colors"
 					class:text-predecessor-orange={activeTab === 'matches'}
@@ -547,192 +411,7 @@
 			</div>
 
 			<div class="p-6">
-				{#if activeTab === 'current'}
-					<!-- Current Game -->
-					<div class="flex items-center justify-between mb-4">
-						<h3 class="text-lg font-semibold">Live Match Status</h3>
-						<div class="flex items-center gap-4">
-							<button
-								onclick={toggleAutoRefresh}
-								class="px-4 py-2 rounded-lg transition-colors"
-								class:bg-green-600={autoRefresh}
-								class:bg-predecessor-dark={!autoRefresh}
-							>
-								{autoRefresh ? '⏸ Auto-Refresh ON' : '▶ Auto-Refresh OFF'}
-							</button>
-							<button
-								onclick={() => checkCurrentMatch()}
-								class="px-4 py-2 bg-predecessor-orange hover:bg-predecessor-orange/80 rounded-lg transition-colors"
-							>
-								🔄 Check Now
-							</button>
-						</div>
-					</div>
-
-					{#if currentMatch}
-						{@const ourPlayer = currentMatch.players?.find(p => getPlayerId(p) === playerId)}
-						{@const dawnTeam = currentMatch.players?.filter(p => p.team === 'Dawn' || p.team === 'dawn') || []}
-						{@const duskTeam = currentMatch.players?.filter(p => p.team === 'Dusk' || p.team === 'dusk') || []}
-
-						<div class="bg-predecessor-dark rounded-lg p-4 mb-6">
-							<div class="flex items-center justify-between mb-2">
-								<p class="text-sm text-gray-400">Game Mode: {formatGameMode(currentMatch.game_mode)}</p>
-								<p class="text-sm text-gray-400">Duration: {Math.floor(currentMatch.game_duration / 60)}m</p>
-							</div>
-							<p class="text-xs text-gray-500">Started: {new Date(currentMatch.started_at || currentMatch.start_time || '').toLocaleTimeString()}</p>
-						</div>
-
-						<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							<!-- Dawn Team -->
-							<div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-								<h4 class="font-bold mb-3 text-blue-400">Dawn Team {ourPlayer?.team === 'Dawn' ? '(Your Team)' : ''}</h4>
-								<div class="space-y-3">
-									{#each dawnTeam as player}
-										{@const isOurPlayer = getPlayerId(player) === playerId}
-										{@const heroImage = heroes.find(h => h.id === player.hero_id)}
-										<div class="flex items-center justify-between p-2 rounded {isOurPlayer ? 'bg-blue-500/10' : ''}">
-											<div class="flex items-center space-x-3">
-												{#if heroImage?.image || heroImage?.image_url}
-													<img
-														src={getImageUrl(heroImage.image || heroImage.image_url)}
-														alt={player.hero_name}
-														class="w-10 h-10 rounded object-cover"
-													/>
-												{:else}
-													<div class="w-10 h-10 rounded bg-predecessor-border flex items-center justify-center">
-														<span class="text-xs">{player.hero_name?.substring(0, 3)}</span>
-													</div>
-												{/if}
-												<div>
-													<p class="font-semibold" class:text-predecessor-orange={isOurPlayer}>
-														{getPlayerName(player)}
-													</p>
-													<p class="text-xs text-gray-400">{heroImage?.display_name || 'Unknown'} • {player.role}</p>
-												</div>
-											</div>
-											<div class="text-right">
-												<p class="text-sm font-bold">
-													{player.kills}/{player.deaths}/{player.assists}
-												</p>
-											</div>
-										</div>
-									{/each}
-								</div>
-							</div>
-
-							<!-- Dusk Team -->
-							<div class="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
-								<h4 class="font-bold mb-3 text-purple-400">Dusk Team {ourPlayer?.team === 'Dusk' ? '(Your Team)' : ''}</h4>
-								<div class="space-y-3">
-									{#each duskTeam as player}
-										{@const isOurPlayer = getPlayerId(player) === playerId}
-										{@const heroImage = heroes.find(h => h.id === player.hero_id)}
-										{@const buildData = opponentBuilds.get(getPlayerId(player))}
-										<div class="flex items-center justify-between p-2 rounded {isOurPlayer ? 'bg-purple-500/10' : ''}">
-											<div class="flex items-center space-x-3">
-												{#if heroImage?.image || heroImage?.image_url}
-													<img
-														src={getImageUrl(heroImage.image || heroImage.image_url)}
-														alt={player.hero_name}
-														class="w-10 h-10 rounded object-cover"
-													/>
-												{:else}
-													<div class="w-10 h-10 rounded bg-predecessor-border flex items-center justify-center">
-														<span class="text-xs">{player.hero_name?.substring(0, 3)}</span>
-													</div>
-												{/if}
-												<div>
-													<p class="font-semibold" class:text-predecessor-orange={isOurPlayer}>
-														{getPlayerName(player)}
-													</p>
-													<p class="text-xs text-gray-400">{heroImage?.display_name || 'Unknown'} • {player.role}</p>
-												</div>
-											</div>
-											<div class="text-right">
-												<p class="text-sm font-bold">
-													{player.kills}/{player.deaths}/{player.assists}
-												</p>
-											</div>
-										</div>
-									{/each}
-								</div>
-							</div>
-						</div>
-
-						<!-- Opponent Analysis -->
-						{#if ourPlayer && opponentBuilds.size > 0}
-							<div class="mt-6">
-								<h4 class="font-bold mb-4">Opponent Analysis</h4>
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									{#each Array.from(opponentBuilds.entries()) as [playerId, data]}
-										{@const opponent = data.player}
-										{#if opponent.team !== ourPlayer.team}
-											<div class="bg-predecessor-dark rounded-lg p-4">
-												<div class="flex items-start justify-between mb-2">
-													<div>
-														<p class="font-semibold">{opponent.player_name}</p>
-														<p class="text-sm text-gray-400">{opponent.hero_name} • {opponent.role}</p>
-													</div>
-													{#if opponent.rank_title}
-														<span class="text-xs px-2 py-1 bg-predecessor-border rounded">
-															{opponent.rank_title}
-														</span>
-													{/if}
-												</div>
-
-												<!-- Recent Performance -->
-												<div class="mb-3">
-													<p class="text-sm text-gray-400 mb-2">Recent performance:</p>
-													{#if data.recentMatches.length > 0}
-														<div class="text-xs space-y-1">
-															{#each data.recentMatches.slice(0, 3) as match}
-																{@const playerData = match.players?.find((p: any) => getPlayerId(p) === playerId)}
-																{#if playerData}
-																	<div class="flex items-center justify-between">
-																		<span>
-																			{playerData.kills}/{playerData.deaths}/{playerData.assists} KDA
-																		</span>
-																		<span class="text-gray-500">
-																			{((playerData.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k dmg
-																		</span>
-																	</div>
-																{/if}
-															{/each}
-														</div>
-													{:else}
-														<p class="text-xs text-gray-500">No recent matches found</p>
-													{/if}
-												</div>
-
-												<!-- Build Recommendations -->
-												{#if data.builds && data.builds.length > 0}
-													<div class="border-t border-predecessor-border pt-3">
-														<p class="text-sm text-gray-400 mb-2">
-															{data.builds[0].author_player?.id === opponent.player_id ?
-																"Player's builds:" :
-																"Recommended builds:"}
-														</p>
-														<div class="space-y-2">
-															{#each data.builds as build}
-																<BuildRecommendation {build} compact={true} />
-															{/each}
-														</div>
-													</div>
-												{/if}
-											</div>
-										{/if}
-									{/each}
-								</div>
-							</div>
-						{/if}
-					{:else}
-						<div class="bg-predecessor-dark rounded-lg p-8 text-center">
-							<p class="text-gray-400 mb-4">No active game detected</p>
-							<p class="text-sm text-gray-500">Click "Check Now" to search for a live match</p>
-							<p class="text-xs text-gray-600 mt-2">Note: Live match detection is based on recent match data</p>
-						</div>
-					{/if}
-				{:else if activeTab === 'matches'}
+				{#if activeTab === 'matches'}
 
 					<!-- Match History -->
 					<h3 class="text-lg font-semibold mb-4">Recent Matches</h3>
