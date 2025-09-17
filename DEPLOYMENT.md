@@ -13,7 +13,7 @@ To deploy this application to GitHub Pages with Supabase integration, you need t
 | Secret Name | Value | Description |
 |------------|-------|-------------|
 | `ACCESS_PASSWORD` | `your_password` | Password for accessing the admin panel (optional) |
-| `PUBLIC_SUPABASE_URL` | `https://xnvbiudjergtkxgakmcs.supabase.co` | Your Supabase project URL |
+| `PUBLIC_SUPABASE_URL` | `https://xnvbiudldergtkcgakme.supabase.co` | Your Supabase project URL |
 | `PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGc...` | Your Supabase anon/public key (safe for client-side) |
 
 ### Getting Your Supabase Credentials
