@@ -167,3 +167,12 @@ npm run check
 - Built admin panel for user management
 - Fixed dashboard loading states
 - Implemented player sorting by rank/VP
+- Fixed match data field mapping (id/player_id, display_name/player_name)
+- Added clickable match details with full stats modal
+- Removed Heroes, Statistics, and Teammates tabs
+- Implemented comprehensive Builds system:
+  - Create custom builds with hero, items, and skill order
+  - Filter builds by hero
+  - LocalStorage persistence per player
+  - Build editor modal with hero/item selection
+  - Skill order grid matching omeda.city style

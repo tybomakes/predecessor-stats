@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { omedaAPI, type Player, type Match, type Hero, type Build } from '$lib/api/omeda';
+	import { omedaAPI, type Player, type Match, type Hero, type Build, type Item } from '$lib/api/omeda';
 	import { cache, cacheKeys } from '$lib/api/cache';
 	import { CACHE_DURATION, getImageUrl } from '$lib/config/api';
 	import { gameData } from '$lib/api/gameData';
 	import BuildRecommendation from '$lib/components/BuildRecommendation.svelte';
 	import MatchDetail from '$lib/components/MatchDetail.svelte';
+	import BuildCreator from '$lib/components/BuildCreator.svelte';
+	import { browser } from '$app/environment';
 
 	const playerId = $page.params.id;
 	let player = $state<Player | null>(null);
@@ -24,6 +26,20 @@
 	let autoRefresh = $state(false);
 	let refreshInterval: NodeJS.Timeout | null = null;
 	let selectedMatch = $state<Match | null>(null);
+
+	// Builds state
+	let userBuilds = $state<any[]>([]);
+	let selectedHeroFilter = $state<number | string>('');
+	let showBuildCreator = $state(false);
+	let editingBuild = $state<any>(null);
+	let items = $state<Item[]>([]);
+
+	// Filtered builds based on hero selection
+	let filteredBuilds = $derived(
+		selectedHeroFilter
+			? userBuilds.filter(b => b.hero_id === Number(selectedHeroFilter))
+			: userBuilds
+	);
 
 	// Helper to get player ID (handles both id and player_id fields)
 	function getPlayerId(player: any): string {
@@ -207,15 +223,61 @@
 		}
 	}
 
-	onMount(async () => {
-		// Load hero data for images
-		try {
-			heroes = await gameData.getHeroes();
-		} catch (err) {
-			console.error('Failed to load hero data:', err);
+	// Build management functions
+	function loadBuilds() {
+		if (!browser) return;
+		const stored = localStorage.getItem(`builds_${playerId}`);
+		if (stored) {
+			userBuilds = JSON.parse(stored);
 		}
-		loadPlayerData();
+	}
+
+	function saveBuilds() {
+		if (!browser) return;
+		localStorage.setItem(`builds_${playerId}`, JSON.stringify(userBuilds));
+	}
+
+	function deleteBuild(buildId: string) {
+		userBuilds = userBuilds.filter(b => b.id !== buildId);
+		saveBuilds();
+	}
+
+	function editBuild(build: any) {
+		editingBuild = build;
+		showBuildCreator = true;
+	}
+
+	function saveBuild(build: any) {
+		if (editingBuild) {
+			// Update existing build
+			const index = userBuilds.findIndex(b => b.id === editingBuild.id);
+			if (index !== -1) {
+				userBuilds[index] = build;
+			}
+		} else {
+			// Add new build
+			build.id = Date.now().toString();
+			userBuilds = [...userBuilds, build];
+		}
+		saveBuilds();
+		showBuildCreator = false;
+		editingBuild = null;
+	}
+
+	onMount(async () => {
+		// Load hero and item data for images
+		try {
+			[heroes, items] = await Promise.all([
+				gameData.getHeroes(),
+				gameData.getItems()
+			]);
+		} catch (err) {
+			console.error('Failed to load game data:', err);
+		}
+
+		await loadPlayerData();
 		checkCurrentMatch();
+		loadBuilds();
 
 		// Clean up interval on unmount
 		return () => {
@@ -355,34 +417,14 @@
 					Matches
 				</button>
 				<button
-					onclick={() => activeTab = 'heroes'}
+					onclick={() => activeTab = 'builds'}
 					class="px-6 py-3 font-semibold transition-colors"
-					class:text-predecessor-orange={activeTab === 'heroes'}
-					class:border-b-2={activeTab === 'heroes'}
-					class:border-predecessor-orange={activeTab === 'heroes'}
-					class:text-gray-400={activeTab !== 'heroes'}
+					class:text-predecessor-orange={activeTab === 'builds'}
+					class:border-b-2={activeTab === 'builds'}
+					class:border-predecessor-orange={activeTab === 'builds'}
+					class:text-gray-400={activeTab !== 'builds'}
 				>
-					Heroes
-				</button>
-				<button
-					onclick={() => activeTab = 'statistics'}
-					class="px-6 py-3 font-semibold transition-colors"
-					class:text-predecessor-orange={activeTab === 'statistics'}
-					class:border-b-2={activeTab === 'statistics'}
-					class:border-predecessor-orange={activeTab === 'statistics'}
-					class:text-gray-400={activeTab !== 'statistics'}
-				>
-					Statistics
-				</button>
-				<button
-					onclick={() => activeTab = 'teammates'}
-					class="px-6 py-3 font-semibold transition-colors"
-					class:text-predecessor-orange={activeTab === 'teammates'}
-					class:border-b-2={activeTab === 'teammates'}
-					class:border-predecessor-orange={activeTab === 'teammates'}
-					class:text-gray-400={activeTab !== 'teammates'}
-				>
-					Teammates
+					Builds
 				</button>
 			</div>
 
@@ -665,137 +707,82 @@
 					{:else}
 						<p class="text-gray-400 text-center py-8">No recent matches found</p>
 					{/if}
-				{:else if activeTab === 'heroes'}
-					<!-- Hero Statistics -->
-					<h3 class="text-lg font-semibold mb-4">Hero Performance</h3>
-					{#if heroStats && heroStats.length > 0}
+				{:else if activeTab === 'builds'}
+					<!-- Builds Section -->
+					<div class="flex items-center justify-between mb-4">
+						<h3 class="text-lg font-semibold">My Builds</h3>
+						<button
+							onclick={() => showBuildCreator = true}
+							class="px-4 py-2 bg-predecessor-orange text-black font-semibold rounded-lg hover:bg-predecessor-orange/80 transition-colors"
+						>
+							+ Create Build
+						</button>
+					</div>
+
+					<!-- Hero Filter -->
+					<div class="mb-4">
+						<select
+							bind:value={selectedHeroFilter}
+							class="bg-predecessor-dark border border-predecessor-border rounded-lg px-4 py-2 text-sm"
+						>
+							<option value="">All Heroes</option>
+							{#each heroes as hero}
+								<option value={hero.id}>{hero.display_name}</option>
+							{/each}
+						</select>
+					</div>
+
+					<!-- Builds List -->
+					{#if filteredBuilds.length > 0}
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							{#each heroStats as hero}
-								{@const heroData = heroes.find(h => h.id === hero.hero_id || h.display_name === hero.hero_name || h.name === hero.hero_name)}
+							{#each filteredBuilds as build}
+								{@const hero = heroes.find(h => h.id === build.hero_id)}
 								<div class="bg-predecessor-dark rounded-lg p-4">
-									<div class="flex items-center justify-between mb-3">
-										<div class="flex items-center space-x-3">
-											{#if heroData?.image || heroData?.image_url}
+									<div class="flex items-start justify-between mb-3">
+										<div>
+											<h4 class="font-semibold">{build.title}</h4>
+											<p class="text-sm text-gray-400">
+												{hero?.display_name || 'Unknown Hero'} • {build.role}
+											</p>
+										</div>
+										<button
+											onclick={() => deleteBuild(build.id)}
+											class="text-red-500 hover:text-red-400 text-sm"
+										>
+											Delete
+										</button>
+									</div>
+
+									<!-- Items Preview -->
+									<div class="flex gap-2 mb-2">
+										{#each build.items as itemId}
+											{@const item = items.find(i => i.id === itemId)}
+											{#if item}
 												<img
-													src={getImageUrl(heroData.image || heroData.image_url)}
-													alt={heroData.display_name}
-													class="w-12 h-12 rounded object-cover"
+													src={getImageUrl(item.image || item.image_url)}
+													alt={item.display_name}
+													class="w-10 h-10 rounded border border-predecessor-border"
+													title={item.display_name}
 												/>
 											{:else}
-												<div class="w-12 h-12 rounded bg-predecessor-border flex items-center justify-center">
-													<span class="text-sm">{hero.hero_name?.substring(0, 3) || '?'}</span>
-												</div>
+												<div class="w-10 h-10 rounded border border-predecessor-border bg-predecessor-darker"></div>
 											{/if}
-											<div>
-												<p class="font-semibold">{hero.hero_name || 'Unknown'}</p>
-												<p class="text-sm text-gray-400">{hero.role || 'Any Role'}</p>
-											</div>
-										</div>
-										<div class="text-right">
-											<p class="text-lg font-bold" class:text-green-500={hero.winrate >= 50} class:text-red-500={hero.winrate < 50}>
-												{hero.winrate?.toFixed(1) || 0}%
-											</p>
-											<p class="text-xs text-gray-400">Win Rate</p>
-										</div>
+										{/each}
 									</div>
-									<div class="grid grid-cols-3 gap-2 text-center">
-										<div>
-											<p class="text-sm font-semibold">{hero.games_played || 0}</p>
-											<p class="text-xs text-gray-400">Games</p>
-										</div>
-										<div>
-											<p class="text-sm font-semibold">{hero.avg_kda?.toFixed(2) || '-'}</p>
-											<p class="text-xs text-gray-400">KDA</p>
-										</div>
-										<div>
-											<p class="text-sm font-semibold">{hero.avg_cs?.toFixed(0) || '-'}</p>
-											<p class="text-xs text-gray-400">CS</p>
-										</div>
-									</div>
+
+									<button
+										onclick={() => editBuild(build)}
+										class="text-sm text-predecessor-orange hover:text-predecessor-orange/80"
+									>
+										Edit Build
+									</button>
 								</div>
 							{/each}
 						</div>
 					{:else}
-						<p class="text-gray-400 text-center py-8">No hero statistics available</p>
-					{/if}
-				{:else if activeTab === 'statistics'}
-					<!-- Detailed Statistics -->
-					<h3 class="text-lg font-semibold mb-4">Performance Statistics</h3>
-					{#if playerStats}
-						<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Total Kills</p>
-								<p class="text-xl font-bold">{playerStats.total_kills || 0}</p>
-							</div>
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Total Deaths</p>
-								<p class="text-xl font-bold">{playerStats.total_deaths || 0}</p>
-							</div>
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Total Assists</p>
-								<p class="text-xl font-bold">{playerStats.total_assists || 0}</p>
-							</div>
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Avg Damage</p>
-								<p class="text-xl font-bold">{playerStats.avg_damage_dealt_to_heroes?.toFixed(0) || '-'}</p>
-							</div>
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Avg Gold/Min</p>
-								<p class="text-xl font-bold">{playerStats.avg_gold_per_minute?.toFixed(0) || '-'}</p>
-							</div>
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Avg CS/Min</p>
-								<p class="text-xl font-bold">{playerStats.avg_cs_per_minute?.toFixed(1) || '-'}</p>
-							</div>
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Avg Wards</p>
-								<p class="text-xl font-bold">{playerStats.avg_wards_placed?.toFixed(1) || '-'}</p>
-							</div>
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Longest Win Streak</p>
-								<p class="text-xl font-bold">{playerStats.longest_win_streak || 0}</p>
-							</div>
-							<div class="bg-predecessor-dark rounded-lg p-4">
-								<p class="text-sm text-gray-400 mb-1">Current Streak</p>
-								<p class="text-xl font-bold" class:text-green-500={playerStats.current_win_streak > 0} class:text-red-500={playerStats.current_win_streak < 0}>
-									{playerStats.current_win_streak > 0 ? `W${playerStats.current_win_streak}` : playerStats.current_win_streak < 0 ? `L${Math.abs(playerStats.current_win_streak)}` : '0'}
-								</p>
-							</div>
-						</div>
-					{:else}
-						<p class="text-gray-400 text-center py-8">No statistics available</p>
-					{/if}
-				{:else if activeTab === 'teammates'}
-					<!-- Common Teammates -->
-					<h3 class="text-lg font-semibold mb-4">Common Teammates</h3>
-					{#if commonTeammates && commonTeammates.length > 0}
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							{#each commonTeammates as teammate}
-								<div class="bg-predecessor-dark rounded-lg p-4">
-									<div class="flex items-center justify-between">
-										<div>
-											<p class="font-semibold">{teammate.player_name || 'Unknown'}</p>
-											<p class="text-sm text-gray-400">
-												{teammate.games_played || 0} games together
-											</p>
-											<p class="text-sm">
-												<span class="text-green-500">{teammate.wins || 0}W</span>
-												<span class="text-gray-400"> - </span>
-												<span class="text-red-500">{teammate.losses || 0}L</span>
-											</p>
-										</div>
-										<div class="text-right">
-											<p class="text-2xl font-bold" class:text-green-500={teammate.winrate >= 50} class:text-red-500={teammate.winrate < 50}>
-												{teammate.winrate?.toFixed(1) || 0}%
-											</p>
-											<p class="text-xs text-gray-400">Win Rate</p>
-										</div>
-									</div>
-								</div>
-							{/each}
-						</div>
-					{:else}
-						<p class="text-gray-400 text-center py-8">No teammate data available</p>
+						<p class="text-gray-400 text-center py-8">
+							{selectedHeroFilter ? 'No builds found for this hero' : 'No builds created yet'}
+						</p>
 					{/if}
 				{/if}
 			</div>
@@ -809,5 +796,19 @@
 		match={selectedMatch}
 		{playerId}
 		onClose={() => selectedMatch = null}
+	/>
+{/if}
+
+<!-- Build Creator Modal -->
+{#if showBuildCreator}
+	<BuildCreator
+		{heroes}
+		{items}
+		existingBuild={editingBuild}
+		onSave={saveBuild}
+		onClose={() => {
+			showBuildCreator = false;
+			editingBuild = null;
+		}}
 	/>
 {/if}
