@@ -297,6 +297,9 @@
 	}
 
 	async function saveBuild(build: any) {
+		console.log('Saving build:', build);
+		console.log('Supabase configured:', db.isConfigured());
+
 		if (db.isConfigured()) {
 			if (editingBuild) {
 				// Update existing build in Supabase
@@ -309,6 +312,7 @@
 				}
 			} else {
 				// Create new build in Supabase
+				console.log('Creating new build in Supabase for player:', playerId);
 				const newBuild = await db.createBuild({
 					player_id: playerId,
 					name: build.name,
@@ -320,11 +324,15 @@
 					notes: build.notes || '',
 					is_public: false
 				});
+				console.log('New build created:', newBuild);
 				if (newBuild) {
 					userBuilds = [...userBuilds, newBuild];
+				} else {
+					console.error('Failed to create build in Supabase');
 				}
 			}
 		} else {
+			console.log('Supabase not configured, using localStorage');
 			// Fallback to localStorage
 			if (editingBuild) {
 				const index = userBuilds.findIndex(b => b.id === editingBuild.id);

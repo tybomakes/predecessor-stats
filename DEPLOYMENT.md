@@ -14,7 +14,7 @@ To deploy this application to GitHub Pages with Supabase integration, you need t
 |------------|-------|-------------|
 | `ACCESS_PASSWORD` | `your_password` | Password for accessing the admin panel (optional) |
 | `PUBLIC_SUPABASE_URL` | `https://xnvbiudldergtkcgakme.supabase.co` | Your Supabase project URL |
-| `PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGc...` | Your Supabase anon/public key (safe for client-side) |
+| `PUBLIC_SUPABASE_ANON_KEY` | Your full anon key WITHOUT quotes | Your Supabase anon/public key (safe for client-side) |
 
 ### Getting Your Supabase Credentials
 
@@ -30,6 +30,9 @@ To deploy this application to GitHub Pages with Supabase integration, you need t
 - The `anon public` key is safe to expose client-side as it only provides access based on your Row Level Security (RLS) policies
 - Never commit the `.env.local` file to version control
 - The GitHub Actions workflow will automatically inject these secrets during the build process
+- **IMPORTANT**: When adding secrets to GitHub, DO NOT include quotes around the values
+  - ✅ Correct: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+  - ❌ Wrong: `'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'`
 
 ### Local Development
 

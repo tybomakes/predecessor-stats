@@ -32,13 +32,49 @@ export interface Build {
 const supabaseUrl = PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = PUBLIC_SUPABASE_ANON_KEY || '';
 
+console.log('Initializing Supabase with URL:', supabaseUrl);
+console.log('Anon key present:', !!supabaseAnonKey);
+console.log('Anon key length:', supabaseAnonKey?.length || 0);
+console.log('URL valid:', supabaseUrl?.startsWith('https://'));
+
 if (!supabaseUrl || !supabaseAnonKey) {
 	console.warn('Supabase credentials not configured. Database features will be disabled.');
+	console.warn('URL:', supabaseUrl || 'MISSING');
+	console.warn('Key present:', !!supabaseAnonKey);
+	console.warn('Key length:', supabaseAnonKey?.length || 0);
 }
 
 export const supabase = supabaseUrl && supabaseAnonKey
 	? createClient(supabaseUrl, supabaseAnonKey)
 	: null;
+
+console.log('Supabase client initialized:', !!supabase);
+
+// Add a test function to verify Supabase connection
+export async function testSupabaseConnection() {
+	if (!supabase) {
+		console.error('Supabase client not initialized');
+		return false;
+	}
+
+	try {
+		const { data, error } = await supabase
+			.from('tracked_players')
+			.select('count')
+			.limit(1);
+
+		if (error) {
+			console.error('Supabase connection test failed:', error);
+			return false;
+		}
+
+		console.log('Supabase connection successful');
+		return true;
+	} catch (err) {
+		console.error('Supabase connection test error:', err);
+		return false;
+	}
+}
 
 // Helper functions for database operations
 export const db = {
@@ -153,7 +189,12 @@ export const db = {
 	},
 
 	async createBuild(build: Omit<Build, 'id' | 'created_at' | 'updated_at'>): Promise<Build | null> {
-		if (!supabase) return null;
+		if (!supabase) {
+			console.error('Supabase client not initialized');
+			return null;
+		}
+
+		console.log('Attempting to create build with data:', build);
 
 		const { data, error } = await supabase
 			.from('builds')
@@ -163,9 +204,11 @@ export const db = {
 
 		if (error) {
 			console.error('Error creating build:', error);
+			console.error('Error details:', error.message, error.details, error.hint);
 			return null;
 		}
 
+		console.log('Build created successfully:', data);
 		return data;
 	},
 
