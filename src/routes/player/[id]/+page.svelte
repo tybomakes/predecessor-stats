@@ -110,18 +110,15 @@
 				commonTeammates = teammatesData?.teammates || [];
 
 				// Debug logging to see what data we're getting
-				console.log('Player data fields:', {
-					total_matches_played: playerData?.total_matches_played,
+				console.log('Full player object:', playerData);
+				console.log('Player favorite_hero:', playerData?.favorite_hero);
+				console.log('Player stats fields:', {
 					games_played: playerData?.games_played,
-					total_matches_won: playerData?.total_matches_won,
 					wins: playerData?.wins,
-					total_matches_lost: playerData?.total_matches_lost,
 					losses: playerData?.losses,
 					avg_kda_ratio: playerData?.avg_kda_ratio,
-					kda_ratio: playerData?.kda_ratio,
 					last_24_hours_wins: playerData?.last_24_hours_wins,
 					last_24_hours_losses: playerData?.last_24_hours_losses,
-					full_data: playerData
 				});
 				console.log('Player stats object:', statsData);
 				console.log('Hero stats response:', heroStatsData);
@@ -345,6 +342,13 @@
 
 	// Get player's favorite (most played) hero
 	const favoriteHero = $derived(() => {
+		// First check if player has a favorite_hero field directly
+		if (player?.favorite_hero) {
+			console.log('Using player.favorite_hero:', player.favorite_hero);
+			return player.favorite_hero;
+		}
+
+		// Fallback to heroStats if available
 		console.log('Computing favorite hero, heroStats:', heroStats);
 		console.log('Heroes available:', heroes.length);
 
@@ -420,11 +424,11 @@
 			<div class="flex items-start justify-between">
 				<div class="flex items-center space-x-6">
 					<!-- Favorite Hero or Avatar -->
-					{#if favoriteHero()}
+					{#if favoriteHero}
 						<div class="relative">
 							<img
-								src={getImageUrl(favoriteHero().image || favoriteHero().image_url)}
-								alt={favoriteHero().display_name}
+								src={getImageUrl(favoriteHero.image || favoriteHero.image_url || favoriteHero.favorite_hero_image)}
+								alt={favoriteHero.display_name || favoriteHero.name}
 								class="w-24 h-24 rounded-lg object-cover border-2 border-predecessor-orange/50"
 							/>
 							<div class="absolute -bottom-2 -right-2 bg-predecessor-dark rounded px-2 py-1 text-xs border border-predecessor-border">
@@ -447,7 +451,7 @@
 							{/if}
 						</div>
 						<div class="flex items-center space-x-4 text-sm text-gray-400 mt-2">
-							<span>Main Role: <span class="text-white">{mainRole()}</span></span>
+							<span>Main Role: <span class="text-white">{mainRole}</span></span>
 							<span>Region: <span class="text-white">NA</span></span>
 							{#if player.last_match_ended_at}
 								<span>Last Match: <span class="text-white">{new Date(player.last_match_ended_at).toLocaleDateString()}</span></span>
@@ -473,31 +477,27 @@
 			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Games</p>
-					<p class="text-2xl font-bold">{(() => {
-						const value = player.total_matches_played || player.games_played || playerStats?.games_played || playerStats?.total_matches_played || 0;
-						console.log('Games - player.total_matches_played:', player.total_matches_played, 'player.games_played:', player.games_played, 'playerStats:', playerStats);
-						return value;
-					})()}</p>
+					<p class="text-2xl font-bold">{player?.games_played || player?.total_matches_played || playerStats?.games_played || playerStats?.total_matches_played || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Wins</p>
-					<p class="text-2xl font-bold text-green-500">{player.total_matches_won || player.wins || playerStats?.wins || playerStats?.matches_won || playerStats?.total_matches_won || 0}</p>
+					<p class="text-2xl font-bold text-green-500">{player?.wins || player?.total_matches_won || playerStats?.wins || playerStats?.matches_won || playerStats?.total_matches_won || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Losses</p>
-					<p class="text-2xl font-bold text-red-500">{player.total_matches_lost || player.losses || playerStats?.losses || playerStats?.matches_lost || playerStats?.total_matches_lost || 0}</p>
+					<p class="text-2xl font-bold text-red-500">{player?.losses || player?.total_matches_lost || playerStats?.losses || playerStats?.matches_lost || playerStats?.total_matches_lost || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">24hr W/L</p>
 					<p class="text-2xl font-bold">
-						<span class="text-green-500">{player.last_24_hours_wins || playerStats?.last_24_hours_wins || playerStats?.wins_24h || 0}</span>
+						<span class="text-green-500">{player?.last_24_hours_wins || playerStats?.last_24_hours_wins || playerStats?.wins_24h || 0}</span>
 						<span class="text-gray-400">/</span>
-						<span class="text-red-500">{player.last_24_hours_losses || playerStats?.last_24_hours_losses || playerStats?.losses_24h || 0}</span>
+						<span class="text-red-500">{player?.last_24_hours_losses || playerStats?.last_24_hours_losses || playerStats?.losses_24h || 0}</span>
 					</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Avg KDA</p>
-					<p class="text-2xl font-bold">{player.avg_kda_ratio || player.kda_ratio || playerStats?.avg_kda_ratio || playerStats?.kda_ratio || '-'}</p>
+					<p class="text-2xl font-bold">{typeof (player?.avg_kda_ratio || player?.kda_ratio) === 'number' ? (player?.avg_kda_ratio || player?.kda_ratio).toFixed(2) : playerStats?.avg_kda_ratio || playerStats?.kda_ratio || '-'}</p>
 				</div>
 			</div>
 		</div>
