@@ -21,7 +21,7 @@
 				<nav class="flex items-center justify-between h-16">
 					<a href="{base}/" class="flex items-center space-x-2">
 						<span class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-predecessor-orange to-amber-500 bg-clip-text text-transparent">
-							Predecessor Stats
+							BLG Predecessor Stats
 						</span>
 					</a>
 

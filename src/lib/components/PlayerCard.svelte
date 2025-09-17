@@ -3,8 +3,9 @@
 	import { onMount } from 'svelte';
 	import type { TrackedUser } from '$lib/config/users';
 	import { omedaAPI } from '$lib/api/omeda';
-	import type { Player } from '$lib/api/omeda';
+	import type { Player, Hero } from '$lib/api/omeda';
 	import { getImageUrl } from '$lib/config/api';
+	import { gameData } from '$lib/api/gameData';
 
 	interface Props {
 		user: TrackedUser;
@@ -13,8 +14,11 @@
 	let { user }: Props = $props();
 	let playerData = $state<Player | null>(null);
 	let playerStats = $state<any>(null);
+	let heroStats = $state<any[]>([]);
+	let heroes = $state<Hero[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let favoriteHero = $state<Hero | null>(null);
 
 	// Helper to get rank color
 	function getRankColor(rankTitle: string | undefined) {
@@ -35,10 +39,12 @@
 			error = null;
 			console.log('Fetching data for player:', user.id);
 
-			// Fetch both player info and statistics
-			const [player, stats] = await Promise.all([
+			// Fetch player info, statistics, and hero stats
+			const [player, stats, heroStatsData, heroesData] = await Promise.all([
 				omedaAPI.getPlayer(user.id),
-				omedaAPI.getPlayerStatistics(user.id)
+				omedaAPI.getPlayerStatistics(user.id),
+				omedaAPI.getPlayerHeroStatistics(user.id),
+				gameData.getHeroes()
 			]);
 
 			console.log('Player data received:', player);
@@ -46,6 +52,15 @@
 
 			playerData = player;
 			playerStats = stats;
+			heroStats = heroStatsData?.hero_statistics || [];
+			heroes = heroesData || [];
+
+			// Find favorite hero (most played)
+			if (heroStats.length > 0) {
+				const sorted = [...heroStats].sort((a, b) => (b.games_played || 0) - (a.games_played || 0));
+				const heroId = sorted[0].hero_id;
+				favoriteHero = heroes.find(h => h.id === heroId) || null;
+			}
 		} catch (e) {
 			console.error('Failed to load player data:', e);
 			error = 'Failed to load data';
@@ -60,12 +75,22 @@
 	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-4 sm:p-5 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10 group"
 >
 	<div class="flex flex-col items-center text-center">
-		<!-- Player Name at Top -->
-		<h3 class="text-base font-bold mb-3 w-full px-1" title={playerData?.display_name || user.displayName}>
-			<span class="block truncate">
-				{playerData?.display_name || user.displayName}
-			</span>
-		</h3>
+		<!-- Player Name and Favorite Hero -->
+		<div class="flex items-center justify-center gap-3 mb-3 w-full">
+			{#if favoriteHero}
+				<img
+					src={getImageUrl(favoriteHero.image || favoriteHero.image_url)}
+					alt={favoriteHero.display_name}
+					class="w-10 h-10 rounded object-cover border border-predecessor-border"
+					title="Favorite: {favoriteHero.display_name}"
+				/>
+			{/if}
+			<h3 class="text-base font-bold" title={playerData?.display_name || user.displayName}>
+				<span class="block truncate">
+					{playerData?.display_name || user.displayName}
+				</span>
+			</h3>
+		</div>
 
 		<!-- Rank Badge with Image (Larger) -->
 		<div class="relative mb-3">

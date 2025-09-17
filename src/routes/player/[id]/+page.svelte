@@ -53,6 +53,22 @@
 		return player.display_name || player.player_name || 'Unknown';
 	}
 
+	// Helper to get relative time
+	function getRelativeTime(dateStr: string | undefined): string {
+		if (!dateStr) return '';
+		const date = new Date(dateStr);
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffMins = Math.floor(diffMs / 60000);
+		const diffHours = Math.floor(diffMs / 3600000);
+		const diffDays = Math.floor(diffMs / 86400000);
+
+		if (diffMins < 60) return `about ${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+		if (diffHours < 24) return `about ${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+		if (diffDays < 7) return `about ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+		return date.toLocaleDateString();
+	}
+
 	async function loadPlayerData(useCache = true) {
 		if (!playerId) {
 			error = 'No player ID provided';
@@ -307,6 +323,16 @@
 		const sortedRoles = Object.entries(roleCounts).sort(([,a], [,b]) => b - a);
 		return sortedRoles.length > 0 ? sortedRoles[0][0] : 'Unknown';
 	});
+
+	// Get player's favorite (most played) hero
+	const favoriteHero = $derived(() => {
+		if (!heroStats || heroStats.length === 0) return null;
+		// Sort by games played and get the top one
+		const sorted = [...heroStats].sort((a, b) => (b.games_played || 0) - (a.games_played || 0));
+		if (sorted.length === 0) return null;
+		const heroId = sorted[0].hero_id;
+		return heroes.find(h => h.id === heroId) || null;
+	});
 </script>
 
 <svelte:head>
@@ -336,10 +362,23 @@
 		<div class="bg-predecessor-card border border-predecessor-border rounded-lg p-6">
 			<div class="flex items-start justify-between">
 				<div class="flex items-center space-x-6">
-					<!-- Avatar Placeholder -->
-					<div class="w-24 h-24 rounded-lg bg-gradient-to-br from-predecessor-orange/20 to-predecessor-orange/10 flex items-center justify-center border border-predecessor-orange/30">
-						<span class="text-4xl font-bold text-predecessor-orange">{player.display_name?.charAt(0) || player.name?.charAt(0) || '?'}</span>
-					</div>
+					<!-- Favorite Hero or Avatar -->
+					{#if favoriteHero()}
+						<div class="relative">
+							<img
+								src={getImageUrl(favoriteHero().image || favoriteHero().image_url)}
+								alt={favoriteHero().display_name}
+								class="w-24 h-24 rounded-lg object-cover border-2 border-predecessor-orange/50"
+							/>
+							<div class="absolute -bottom-2 -right-2 bg-predecessor-dark rounded px-2 py-1 text-xs border border-predecessor-border">
+								<span class="text-gray-400">Favorite</span>
+							</div>
+						</div>
+					{:else}
+						<div class="w-24 h-24 rounded-lg bg-gradient-to-br from-predecessor-orange/20 to-predecessor-orange/10 flex items-center justify-center border border-predecessor-orange/30">
+							<span class="text-4xl font-bold text-predecessor-orange">{player.display_name?.charAt(0) || player.name?.charAt(0) || '?'}</span>
+						</div>
+					{/if}
 					<div>
 						<h1 class="text-3xl font-bold mb-2">{player.display_name || player.name}</h1>
 						<div class="flex items-center space-x-4 text-sm">
@@ -637,8 +676,21 @@
 									onclick={() => selectedMatch = match}
 									class="w-full text-left bg-predecessor-dark rounded-lg overflow-hidden hover:bg-predecessor-border/30 transition-colors cursor-pointer">
 									<div class="flex">
-										<!-- Win/Loss Indicator -->
-										<div class="w-1" class:bg-green-500={isWin} class:bg-red-500={!isWin}></div>
+										<!-- Victory/Defeat Badge -->
+										<div class="p-4 flex flex-col items-center justify-center" style="min-width: 100px">
+											<div class="px-3 py-1 rounded text-sm font-bold {isWin ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}">
+												{isWin ? 'Victory' : 'Defeat'}
+											</div>
+											<div class="mt-2 text-center">
+												<p class="text-xs text-gray-400 uppercase">{match.game_mode || 'PVP'}</p>
+												{#if playerMatch?.vp_change !== undefined && playerMatch.vp_change !== 0}
+													<p class="text-sm font-semibold {playerMatch.vp_change > 0 ? 'text-green-400' : 'text-red-400'}">
+														{playerMatch.vp_change > 0 ? '+' : ''}{playerMatch.vp_change} VP
+													</p>
+												{/if}
+												<p class="text-xs text-gray-500">{getRelativeTime(match.end_time || match.ended_at)}</p>
+											</div>
+										</div>
 
 										<div class="flex-1 p-4">
 											<div class="flex items-center justify-between">
@@ -648,19 +700,21 @@
 														<img
 															src={getImageUrl(hero.image || hero.image_url)}
 															alt={hero.display_name}
-															class="w-12 h-12 rounded object-cover"
+															class="w-14 h-14 rounded object-cover"
 														/>
 													{:else}
-														<div class="w-12 h-12 rounded bg-predecessor-border flex items-center justify-center">
+														<div class="w-14 h-14 rounded bg-predecessor-border flex items-center justify-center">
 															<span class="text-sm">{playerMatch?.hero_name?.substring(0, 3) || '?'}</span>
 														</div>
 													{/if}
 													<div>
 														<div class="flex items-center space-x-2">
-															<p class="font-semibold">{hero?.display_name || 'Unknown Hero'}</p>
-															<span class="text-xs px-2 py-1 bg-predecessor-border rounded">{playerMatch?.role || 'Any'}</span>
+															<p class="font-semibold text-lg">{hero?.display_name || playerMatch?.hero_name || 'Unknown'}</p>
+															<span class="text-xs px-2 py-1 bg-predecessor-border rounded capitalize">{playerMatch?.role || 'Any'}</span>
 														</div>
-														<p class="text-sm text-gray-400">{match.game_mode} • {Math.floor(match.game_duration / 60)}m {match.game_duration % 60}s</p>
+														<div class="flex items-center gap-3 text-sm">
+															<span class="text-gray-400">Level {playerMatch?.player_level || '-'}</span>
+														</div>
 													</div>
 												</div>
 
@@ -695,17 +749,13 @@
 														<p class="text-xs text-gray-400">Gold</p>
 													</div>
 
-													<!-- Wards -->
-													<div class="text-center">
-														<p class="text-lg font-bold text-cyan-500">{playerMatch?.wards_placed || 0}</p>
-														<p class="text-xs text-gray-400">Wards</p>
-													</div>
-
-													<!-- Time -->
-													<div class="text-right text-sm text-gray-400">
-														<p>{new Date(match.end_time || match.ended_at || '').toLocaleDateString()}</p>
-														<p>{new Date(match.end_time || match.ended_at || '').toLocaleTimeString()}</p>
-													</div>
+													<!-- Performance Score if available -->
+													{#if playerMatch?.performance_score}
+														<div class="text-center">
+															<p class="text-lg font-bold">{playerMatch.performance_score.toFixed(1)}</p>
+															<p class="text-xs text-gray-400">PS</p>
+														</div>
+													{/if}
 												</div>
 											</div>
 										</div>

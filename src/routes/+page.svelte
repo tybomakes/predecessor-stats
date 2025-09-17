@@ -68,15 +68,7 @@
 	<meta name="description" content="Track your Predecessor game statistics" />
 </svelte:head>
 
-<div class="space-y-8">
-	<!-- Hero Section -->
-	<div class="text-center py-8 sm:py-12 px-4">
-		<h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-predecessor-orange to-amber-500 bg-clip-text text-transparent">
-			Predecessor Stats Tracker
-		</h1>
-		<p class="text-lg sm:text-xl text-gray-400">Track your stats, analyze matches, and improve your gameplay</p>
-	</div>
-
+<div class="py-8 px-4">
 	<!-- Users Grid - 4 cards per row -->
 	{#if loading}
 		<div class="flex items-center justify-center py-12">
