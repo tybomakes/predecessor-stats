@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.svelte-kit
+build
+dist
+
+# Development files
+src
+static
+*.svelte
+*.ts
+*.md
+svelte.config.js
+vite.config.js
+tailwind.config.js
+postcss.config.js
+tsconfig.json
+
+# Git and config
+.git
+.github
+.gitignore
+
+# Only deploy the API folder
+!api/**

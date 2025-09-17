@@ -1,10 +1,5 @@
-import { API_BASE_URL } from '$lib/config/api';
+import { API_BASE_URL, VERCEL_PROXY_URL, USE_PROXY } from '$lib/config/api';
 import { browser } from '$app/environment';
-
-// CORS Proxy configuration - only use in browser
-// Note: Omeda.city has Cloudflare protection that blocks most proxies
-// For production, you'll need to set up your own backend proxy server
-const CORS_PROXY = 'https://cors.proxy.consumet.org/';
 
 // Types
 export interface Player {
@@ -78,23 +73,42 @@ const buildFetchOptions = (params?: Record<string, any>): RequestInit => ({
 
 // Generic fetch wrapper with error handling
 async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
-	const url = new URL(`${API_BASE_URL}${endpoint}`);
+	let finalUrl: string;
 
-	if (params) {
-		Object.entries(params).forEach(([key, value]) => {
-			if (value !== undefined && value !== null) {
-				url.searchParams.append(key, String(value));
-			}
-		});
+	// Use Vercel proxy if available and we're in the browser
+	if (browser && USE_PROXY && VERCEL_PROXY_URL) {
+		// Build the path with query parameters
+		const pathUrl = new URL(`${API_BASE_URL}${endpoint}`);
+
+		if (params) {
+			Object.entries(params).forEach(([key, value]) => {
+				if (value !== undefined && value !== null) {
+					pathUrl.searchParams.append(key, String(value));
+				}
+			});
+		}
+
+		// Remove the base URL to get just the path
+		const path = pathUrl.toString().replace(API_BASE_URL, '');
+
+		// Use the Vercel proxy endpoint
+		finalUrl = `${VERCEL_PROXY_URL}/api/proxy?path=${encodeURIComponent(path)}`;
+	} else {
+		// Direct API call (for server-side or when no proxy is configured)
+		const url = new URL(`${API_BASE_URL}${endpoint}`);
+
+		if (params) {
+			Object.entries(params).forEach(([key, value]) => {
+				if (value !== undefined && value !== null) {
+					url.searchParams.append(key, String(value));
+				}
+			});
+		}
+
+		finalUrl = url.toString();
 	}
 
 	try {
-		// Use CORS proxy when in browser environment
-		// allorigins.win returns wrapped response with 'contents' field
-		const finalUrl = browser
-			? `${CORS_PROXY}${encodeURIComponent(url.toString())}`
-			: url.toString();
-
 		const fetchOptions = buildFetchOptions();
 
 		// Add timeout to prevent hanging requests
@@ -113,17 +127,12 @@ async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Prom
 		}
 
 		const data = await response.json();
-
-		// allorigins.win wraps the response
-		if (browser && data && typeof data === 'object' && 'contents' in data) {
-			// Parse the actual JSON from the contents field
-			const actualData = JSON.parse(data.contents);
-			return actualData;
-		}
-
 		return data;
 	} catch (error) {
 		console.error(`Failed to fetch ${endpoint}:`, error);
+		if (browser && !USE_PROXY) {
+			throw new Error('CORS error: Please configure the Vercel proxy. See README for setup instructions.');
+		}
 		throw new Error('Unable to fetch data. Please try again later.');
 	}
 }
