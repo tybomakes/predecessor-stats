@@ -234,6 +234,24 @@ export const omedaAPI = {
 		return fetchAPI('/matches.json', options);
 	},
 
+	async getCurrentMatch(playerId: string): Promise<Match | null> {
+		// Get the most recent matches to check if player is in game
+		const recentMatches = await this.getPlayerMatches(playerId, { per_page: 1 });
+		if (recentMatches.matches && recentMatches.matches.length > 0) {
+			const lastMatch = recentMatches.matches[0];
+			// Check if match ended recently (within last hour could mean still in progress)
+			const matchEndTime = new Date(lastMatch.ended_at).getTime();
+			const now = Date.now();
+			const timeSinceEnd = now - matchEndTime;
+
+			// If match ended less than 5 minutes ago, might still be in progress
+			if (timeSinceEnd < 5 * 60 * 1000) {
+				return lastMatch;
+			}
+		}
+		return null;
+	},
+
 	// Hero endpoints
 	async getHeroes(): Promise<Hero[]> {
 		return fetchAPI<Hero[]>('/heroes.json');
