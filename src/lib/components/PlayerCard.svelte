@@ -60,53 +60,50 @@
 	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-4 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10 group"
 >
 	<div class="flex flex-col items-center text-center">
-		<!-- Rank Badge with Image -->
+		<!-- Player Name at Top -->
+		<h3 class="text-lg font-bold mb-3 truncate w-full px-2">
+			{playerData?.display_name || user.displayName}
+		</h3>
+
+		<!-- Rank Badge with Image (Larger) -->
 		<div class="relative mb-3">
 			{#if loading}
-				<div class="w-24 h-24 rounded-full bg-predecessor-dark animate-pulse flex items-center justify-center">
-					<span class="text-gray-400">⚡</span>
+				<div class="w-32 h-32 rounded-full bg-predecessor-dark animate-pulse flex items-center justify-center">
+					<span class="text-gray-400 text-2xl">⚡</span>
 				</div>
 			{:else if playerData?.rank_image}
 				<div class="relative">
 					<img
 						src={getImageUrl(playerData.rank_image)}
 						alt={playerData.rank_title || 'Rank'}
-						class="w-24 h-24 object-contain group-hover:scale-110 transition-transform"
+						class="w-32 h-32 object-contain group-hover:scale-110 transition-transform"
 					/>
 					<!-- VP Display in center -->
 					<div class="absolute inset-0 flex flex-col items-center justify-center">
-						<span class="text-2xl font-bold text-white drop-shadow-lg">
+						<span class="text-3xl font-bold text-white drop-shadow-lg">
 							{playerData?.vp_total || 0}
 						</span>
-						<span class="text-xs text-white/80 drop-shadow">VP</span>
+						<span class="text-sm text-white/80 drop-shadow font-semibold">VP</span>
 					</div>
 				</div>
 			{:else}
 				<!-- Fallback gradient circle -->
-				<div class="w-24 h-24 rounded-full bg-gradient-to-br {getRankColor(playerData?.rank_title)} flex flex-col items-center justify-center">
-					<span class="text-2xl font-bold text-white">
+				<div class="w-32 h-32 rounded-full bg-gradient-to-br {getRankColor(playerData?.rank_title)} flex flex-col items-center justify-center shadow-lg">
+					<span class="text-3xl font-bold text-white">
 						{playerData?.vp_total || 0}
 					</span>
-					<span class="text-xs text-white/80">VP</span>
+					<span class="text-sm text-white/80 font-semibold">VP</span>
 				</div>
 			{/if}
 		</div>
 
-		<!-- Player Name -->
-		<h3 class="text-lg font-bold mb-1">
-			{playerData?.display_name || user.displayName}
-		</h3>
-
 		<!-- Rank Info -->
-		<div class="text-sm text-gray-400">
+		<div class="text-sm text-gray-400 space-y-1">
 			{#if playerData?.rank_title}
 				<p class="text-predecessor-orange font-semibold">{playerData.rank_title}</p>
 			{/if}
 			{#if playerData?.leaderboard_rank}
-				<p>Rank #{playerData.leaderboard_rank}</p>
-			{/if}
-			{#if playerData?.top_percentage}
-				<p>Top {playerData.top_percentage}%</p>
+				<p class="font-medium">Rank #{playerData.leaderboard_rank}</p>
 			{/if}
 		</div>
 

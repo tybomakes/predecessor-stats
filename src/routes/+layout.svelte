@@ -33,6 +33,13 @@
 						>
 							Dashboard
 						</a>
+						<a
+							href="{base}/admin"
+							class="px-4 py-2 rounded-lg hover:bg-predecessor-card transition-colors"
+							class:bg-predecessor-card={$page.url.pathname === `${base}/admin`}
+						>
+							Admin
+						</a>
 						<button
 							onclick={handleLogout}
 							class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"

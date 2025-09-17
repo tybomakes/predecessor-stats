@@ -1,13 +1,24 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import PlayerCard from '$lib/components/PlayerCard.svelte';
-	import { trackedUsers } from '$lib/stores/users';
+	import { trackedUsersStore } from '$lib/stores/trackedUsers';
 	import { gameData } from '$lib/api/gameData';
+	import type { TrackedUser } from '$lib/config/users';
 
-	let users = $state($trackedUsers);
+	let users = $state<TrackedUser[]>([]);
 
-	// Preload game data on mount
+	// Subscribe to tracked users store
+	$effect(() => {
+		const unsubscribe = trackedUsersStore.subscribe(value => {
+			users = value;
+		});
+
+		return unsubscribe;
+	});
+
+	// Preload game data and load users from storage
 	onMount(() => {
+		trackedUsersStore.loadFromStorage();
 		gameData.preloadAll().catch(console.error);
 	});
 </script>
