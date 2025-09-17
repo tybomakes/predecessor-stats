@@ -263,9 +263,9 @@
 						<h3 class="text-lg font-semibold mb-4">Most Played Heroes</h3>
 						<div class="space-y-2">
 							{#each heroStats.slice(0, 5) as hero}
+								{@const heroData = heroes.find(h => h.display_name === hero.hero_name || h.name === hero.hero_name)}
 								<div class="flex items-center justify-between p-3 bg-predecessor-dark rounded-lg">
 									<div class="flex items-center space-x-3">
-										{@const heroData = heroes.find(h => h.display_name === hero.hero_name || h.name === hero.hero_name)}
 										{#if heroData?.image || heroData?.image_url}
 											<img
 												src={getImageUrl(heroData.image || heroData.image_url)}
@@ -301,6 +301,7 @@
 							{#each matches as match}
 								{@const playerMatch = match.players?.find(p => p.player_id === playerId)}
 								{@const isWin = playerMatch?.team === match.winning_team}
+								{@const hero = heroes.find(h => h.display_name === playerMatch?.hero_name || h.name === playerMatch?.hero_name)}
 								<div class="bg-predecessor-dark rounded-lg overflow-hidden hover:bg-predecessor-border/30 transition-colors">
 									<div class="flex">
 										<!-- Win/Loss Indicator -->
@@ -310,7 +311,6 @@
 											<div class="flex items-center justify-between">
 												<div class="flex items-center space-x-4">
 													<!-- Hero Icon -->
-													{@const hero = heroes.find(h => h.display_name === playerMatch?.hero_name || h.name === playerMatch?.hero_name)}
 													{#if hero?.image || hero?.image_url}
 														<img
 															src={getImageUrl(hero.image || hero.image_url)}
@@ -377,10 +377,10 @@
 					{#if heroStats && heroStats.length > 0}
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 							{#each heroStats as hero}
+								{@const heroData = heroes.find(h => h.display_name === hero.hero_name || h.name === hero.hero_name)}
 								<div class="bg-predecessor-dark rounded-lg p-4">
 									<div class="flex items-center justify-between mb-3">
 										<div class="flex items-center space-x-3">
-											{@const heroData = heroes.find(h => h.display_name === hero.hero_name || h.name === hero.hero_name)}
 											{#if heroData?.image || heroData?.image_url}
 												<img
 													src={getImageUrl(heroData.image || heroData.image_url)}
