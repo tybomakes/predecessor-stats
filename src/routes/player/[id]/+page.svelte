@@ -8,6 +8,7 @@
 	import BuildRecommendation from '$lib/components/BuildRecommendation.svelte';
 	import MatchDetail from '$lib/components/MatchDetail.svelte';
 	import BuildCreator from '$lib/components/BuildCreator.svelte';
+	import BuildDetail from '$lib/components/BuildDetail.svelte';
 	import { browser } from '$app/environment';
 
 	const playerId = $page.params.id;
@@ -32,6 +33,7 @@
 	let selectedHeroFilter = $state<number | string>('');
 	let showBuildCreator = $state(false);
 	let editingBuild = $state<any>(null);
+	let selectedBuild = $state<any>(null);
 	let items = $state<Item[]>([]);
 
 	// Filtered builds based on hero selection
@@ -375,23 +377,27 @@
 			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Games</p>
-					<p class="text-2xl font-bold">{player.games_played || 0}</p>
+					<p class="text-2xl font-bold">{playerStats?.games_played || player.total_matches_played || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Wins</p>
-					<p class="text-2xl font-bold text-green-500">{player.wins || 0}</p>
+					<p class="text-2xl font-bold text-green-500">{playerStats?.matches_won || player.total_matches_won || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Losses</p>
-					<p class="text-2xl font-bold text-red-500">{player.losses || 0}</p>
+					<p class="text-2xl font-bold text-red-500">{playerStats?.matches_lost || player.total_matches_lost || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
-					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Win Rate</p>
-					<p class="text-2xl font-bold text-predecessor-orange">{player.winrate ? `${player.winrate.toFixed(1)}%` : '-'}</p>
+					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">24hr W/L</p>
+					<p class="text-2xl font-bold">
+						<span class="text-green-500">{playerStats?.last_24_hours_wins || 0}</span>
+						<span class="text-gray-400">/</span>
+						<span class="text-red-500">{playerStats?.last_24_hours_losses || 0}</span>
+					</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Avg KDA</p>
-					<p class="text-2xl font-bold">{playerStats?.kda_ratio ? playerStats.kda_ratio.toFixed(2) : '-'}</p>
+					<p class="text-2xl font-bold">{playerStats?.avg_kda_ratio ? playerStats.avg_kda_ratio.toFixed(2) : '-'}</p>
 				</div>
 			</div>
 		</div>
@@ -750,49 +756,90 @@
 
 						<!-- Builds List -->
 						{#if filteredBuilds.length > 0}
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="space-y-4">
 								{#each filteredBuilds as build}
-								{@const hero = heroes.find(h => h.id === build.hero_id)}
-								<div class="bg-predecessor-dark rounded-lg p-4">
-									<div class="flex items-start justify-between mb-3">
-										<div>
-											<h4 class="font-semibold">{build.title}</h4>
-											<p class="text-sm text-gray-400">
-												{hero?.display_name || 'Unknown Hero'} • {build.role}
-											</p>
-										</div>
-										<button
-											onclick={() => deleteBuild(build.id)}
-											class="text-red-500 hover:text-red-400 text-sm"
-										>
-											Delete
-										</button>
-									</div>
-
-									<!-- Items Preview -->
-									<div class="flex gap-2 mb-2">
-										{#each build.items as itemId}
-											{@const item = items.find(i => i.id === itemId)}
-											{#if item}
-												<img
-													src={getImageUrl(item.image || item.image_url)}
-													alt={item.display_name}
-													class="w-10 h-10 rounded border border-predecessor-border"
-													title={item.display_name}
-												/>
-											{:else}
-												<div class="w-10 h-10 rounded border border-predecessor-border bg-predecessor-darker"></div>
-											{/if}
-										{/each}
-									</div>
-
-									<button
-										onclick={() => editBuild(build)}
-										class="text-sm text-predecessor-orange hover:text-predecessor-orange/80"
+									{@const hero = heroes.find(h => h.id === build.hero_id)}
+									<div
+										class="bg-predecessor-dark rounded-lg p-4 hover:bg-predecessor-card transition-colors cursor-pointer"
+										onclick={() => selectedBuild = build}
 									>
-										Edit Build
-									</button>
-								</div>
+										<div class="flex items-center gap-4">
+											<!-- Hero Image -->
+											<div class="flex-shrink-0">
+												{#if hero}
+													<img
+														src={getImageUrl(hero.image || hero.image_url)}
+														alt={hero.display_name}
+														class="w-20 h-20 rounded object-cover"
+													/>
+												{:else}
+													<div class="w-20 h-20 rounded bg-predecessor-border flex items-center justify-center">
+														<span class="text-2xl">?</span>
+													</div>
+												{/if}
+											</div>
+
+											<!-- Build Info -->
+											<div class="flex-1">
+												<div class="flex items-start justify-between mb-2">
+													<div>
+														<h4 class="font-semibold text-lg">{build.title}</h4>
+														<p class="text-sm text-gray-400">
+															{hero?.display_name || 'Unknown Hero'} • {build.role}
+														</p>
+													</div>
+													<div class="flex gap-2">
+														<button
+															onclick={(e) => {
+																e.stopPropagation();
+																editBuild(build);
+															}}
+															class="text-predecessor-orange hover:text-predecessor-orange/80 text-sm"
+														>
+															Edit Build
+														</button>
+														<button
+															onclick={(e) => {
+																e.stopPropagation();
+																deleteBuild(build.id);
+															}}
+															class="text-red-500 hover:text-red-400 text-sm"
+														>
+															Delete
+														</button>
+													</div>
+												</div>
+
+												<!-- Items Display -->
+												<div class="flex gap-2">
+													{#each build.items as itemId}
+														{@const item = items.find(i => i.id === itemId)}
+														{#if item}
+															<div class="relative group">
+																<img
+																	src={getImageUrl(item.image || item.image_url)}
+																	alt={item.display_name}
+																	class="w-14 h-14 rounded border-2 border-predecessor-border"
+																/>
+																<!-- Tooltip -->
+																<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+																	<div class="bg-black/95 rounded-lg p-2 whitespace-nowrap">
+																		<p class="text-sm font-semibold">{item.display_name}</p>
+																		<p class="text-xs text-predecessor-orange">{item.price}g</p>
+																	</div>
+																</div>
+															</div>
+														{:else}
+															<div class="w-14 h-14 rounded border-2 border-predecessor-border bg-predecessor-darker"></div>
+														{/if}
+													{/each}
+													{#each Array(6 - build.items.length) as _}
+														<div class="w-14 h-14 rounded border-2 border-predecessor-border bg-predecessor-darker opacity-30"></div>
+													{/each}
+												</div>
+											</div>
+										</div>
+									</div>
 								{/each}
 							</div>
 						{:else}
@@ -813,6 +860,16 @@
 		match={selectedMatch}
 		playerId={playerId || ''}
 		onClose={() => selectedMatch = null}
+	/>
+{/if}
+
+<!-- Build Detail Modal -->
+{#if selectedBuild}
+	<BuildDetail
+		build={selectedBuild}
+		hero={heroes.find(h => h.id === selectedBuild.hero_id)}
+		{items}
+		onClose={() => selectedBuild = null}
 	/>
 {/if}
 
