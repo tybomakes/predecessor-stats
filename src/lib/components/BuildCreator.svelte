@@ -14,8 +14,8 @@
 
 	let { heroes, items, existingBuild, onSave, onClose }: Props = $props();
 
-	// Build state
-	let title = $state(existingBuild?.title || '');
+	// Build state - support both 'title' and 'name' fields
+	let title = $state(existingBuild?.title || existingBuild?.name || '');
 	let selectedHeroId = $state<number>(existingBuild?.hero_id || 0);
 	let selectedRole = $state(existingBuild?.role || 'carry');
 	let selectedItems = $state<number[]>(existingBuild?.items || []);

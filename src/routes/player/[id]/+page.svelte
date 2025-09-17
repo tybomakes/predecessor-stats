@@ -903,7 +903,7 @@
 											<div class="flex-1">
 												<div class="flex items-start justify-between mb-2">
 													<div>
-														<h4 class="font-semibold text-lg">{build.title}</h4>
+														<h4 class="font-semibold text-lg">{build.title || build.name}</h4>
 														<p class="text-sm text-gray-400">
 															{hero?.display_name || 'Unknown Hero'} • {build.role}
 														</p>

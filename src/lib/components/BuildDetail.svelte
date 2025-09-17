@@ -30,7 +30,7 @@
 						/>
 					{/if}
 					<div>
-						<h2 class="text-xl font-bold">{build.title}</h2>
+						<h2 class="text-xl font-bold">{build.title || build.name}</h2>
 						<p class="text-sm text-gray-400">
 							{hero?.display_name || 'Unknown Hero'} • {build.role}
 						</p>
