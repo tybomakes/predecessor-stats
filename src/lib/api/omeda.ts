@@ -166,10 +166,10 @@ async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Prom
 		}
 
 		// Remove the base URL to get just the path
-		const path = pathUrl.toString().replace(API_BASE_URL, '');
+		const path = pathUrl.toString().replace(API_BASE_URL + '/', '');
 
-		// Use the Vercel proxy endpoint
-		finalUrl = `${VERCEL_PROXY_URL}/api/proxy?path=${encodeURIComponent(path)}`;
+		// Use the SvelteKit API proxy endpoint
+		finalUrl = `${VERCEL_PROXY_URL}/api/omeda/${path}`;
 	} else {
 		// Direct API call (for server-side or when no proxy is configured)
 		const url = new URL(`${API_BASE_URL}${endpoint}`);

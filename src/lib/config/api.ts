@@ -7,7 +7,7 @@ export const VERCEL_PROXY_URL = import.meta.env.VITE_VERCEL_PROXY_URL || 'https:
 export const API_BASE_URL = 'https://omeda.city';
 
 // Helper to determine if we should use the proxy
-export const USE_PROXY = true; // Always use proxy in production
+export const USE_PROXY = false; // Temporarily disable proxy to test direct API calls
 
 export const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 export const LIVE_MATCH_POLL_INTERVAL = 30 * 1000; // 30 seconds

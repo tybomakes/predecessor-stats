@@ -98,9 +98,9 @@
 				const [playerData, matchData, statsData, heroStatsData, teammatesData] = await Promise.all([
 					omedaAPI.getPlayer(playerId),
 					omedaAPI.getPlayerMatches(playerId, { per_page: 20 }),
-					omedaAPI.getPlayerStatistics(playerId),
-					omedaAPI.getPlayerHeroStatistics(playerId),
-					omedaAPI.getPlayerCommonTeammates(playerId, { count: 20 })
+					omedaAPI.getPlayerStatistics(playerId).catch(() => null), // Statistics endpoint might not work
+					omedaAPI.getPlayerHeroStatistics(playerId).catch(() => null),
+					omedaAPI.getPlayerCommonTeammates(playerId, { count: 20 }).catch(() => null)
 				]);
 
 				player = playerData;
@@ -428,31 +428,31 @@
 			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Games</p>
-					<p class="text-2xl font-bold">{playerStats?.matches_played || player?.games_played || player?.total_games_played || 0}</p>
+					<p class="text-2xl font-bold">{player?.matches_played || player?.games_played || player?.total_matches_played || playerStats?.matches_played || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Wins</p>
-					<p class="text-2xl font-bold text-green-500">{(() => {
-						const games = playerStats?.matches_played || 0;
-						const winrate = playerStats?.winrate || 0;
+					<p class="text-2xl font-bold text-green-500">{player?.wins || playerStats?.wins || (() => {
+						const games = player?.matches_played || player?.games_played || playerStats?.matches_played || 0;
+						const winrate = player?.winrate || playerStats?.winrate || 0;
 						return Math.round(games * winrate);
 					})()}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Losses</p>
-					<p class="text-2xl font-bold text-red-500">{(() => {
-						const games = playerStats?.matches_played || 0;
-						const winrate = playerStats?.winrate || 0;
+					<p class="text-2xl font-bold text-red-500">{player?.losses || playerStats?.losses || (() => {
+						const games = player?.matches_played || player?.games_played || playerStats?.matches_played || 0;
+						const winrate = player?.winrate || playerStats?.winrate || 0;
 						return Math.round(games * (1 - winrate));
 					})()}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Win Rate</p>
-					<p class="text-2xl font-bold">{playerStats?.winrate ? (playerStats.winrate * 100).toFixed(1) + '%' : '-'}</p>
+					<p class="text-2xl font-bold">{player?.winrate ? (player.winrate * 100).toFixed(1) + '%' : playerStats?.winrate ? (playerStats.winrate * 100).toFixed(1) + '%' : '-'}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Avg KDA</p>
-					<p class="text-2xl font-bold">{playerStats?.avg_kdar?.toFixed?.(2) || playerStats?.avg_kda_ratio?.toFixed?.(2) || '-'}</p>
+					<p class="text-2xl font-bold">{player?.avg_kdar?.toFixed?.(2) || player?.avg_kda_ratio?.toFixed?.(2) || playerStats?.avg_kdar?.toFixed?.(2) || playerStats?.avg_kda_ratio?.toFixed?.(2) || '-'}</p>
 				</div>
 			</div>
 		</div>

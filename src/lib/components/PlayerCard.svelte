@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
-	import type { TrackedUser } from '$lib/config/users';
+	import type { TrackedPlayer } from '$lib/supabase';
 	import { omedaAPI } from '$lib/api/omeda';
 	import type { Player } from '$lib/api/omeda';
 	import { getImageUrl } from '$lib/config/api';
 
 	interface Props {
-		user: TrackedUser;
+		user: TrackedPlayer;
 	}
 
 	let { user }: Props = $props();
@@ -33,12 +33,12 @@
 		try {
 			loading = true;
 			error = null;
-			console.log('Fetching data for player:', user.id);
+			console.log('Fetching data for player:', user.player_id);
 
 			// Fetch both player info and statistics
 			const [player, stats] = await Promise.all([
-				omedaAPI.getPlayer(user.id),
-				omedaAPI.getPlayerStatistics(user.id)
+				omedaAPI.getPlayer(user.player_id),
+				omedaAPI.getPlayerStatistics(user.player_id).catch(() => null)
 			]);
 
 			console.log('Player data received:', player);
@@ -56,14 +56,14 @@
 </script>
 
 <a
-	href="{base}/player/{user.id}"
+	href="{base}/player/{user.player_id}"
 	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-4 sm:p-5 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10 group"
 >
 	<div class="flex flex-col items-center text-center">
 		<!-- Player Name at Top -->
-		<h3 class="text-base font-bold mb-3 w-full px-1" title={playerData?.display_name || user.displayName}>
+		<h3 class="text-base font-bold mb-3 w-full px-1" title={playerData?.display_name || user.display_name}>
 			<span class="block truncate">
-				{playerData?.display_name || user.displayName}
+				{playerData?.display_name || user.display_name}
 			</span>
 		</h3>
 

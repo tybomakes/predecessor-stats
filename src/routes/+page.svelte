@@ -1,29 +1,31 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import PlayerCard from '$lib/components/PlayerCard.svelte';
-	import { trackedUsersStore } from '$lib/stores/trackedUsers';
+	import { supabaseTrackedUsers } from '$lib/stores/supabaseTrackedUsers';
 	import { gameData } from '$lib/api/gameData';
 	import { omedaAPI } from '$lib/api/omeda';
-	import type { TrackedUser } from '$lib/config/users';
+	import type { TrackedPlayer } from '$lib/supabase';
 	import type { Player } from '$lib/api/omeda';
 
-	let users = $state<TrackedUser[]>([]);
+	let users = $state<TrackedPlayer[]>([]);
 	let playersData = $state<Map<string, Player>>(new Map());
-	let sortedUsers = $state<TrackedUser[]>([]);
+	let sortedUsers = $state<TrackedPlayer[]>([]);
 	let loading = $state(true);
 
 	// Subscribe to tracked users store
 	$effect(() => {
-		const unsubscribe = trackedUsersStore.subscribe(value => {
+		const unsubscribe = supabaseTrackedUsers.subscribe(value => {
 			users = value;
-			loadPlayersData(value);
+			if (value.length > 0) {
+				loadPlayersData(value);
+			}
 		});
 
 		return unsubscribe;
 	});
 
 	// Load player data for sorting by rank
-	async function loadPlayersData(usersList: TrackedUser[]) {
+	async function loadPlayersData(usersList: TrackedPlayer[]) {
 		if (usersList.length === 0) {
 			loading = false;
 			return;
@@ -32,10 +34,10 @@
 		loading = true;
 		for (const user of usersList) {
 			try {
-				const playerData = await omedaAPI.getPlayer(user.id);
-				playersData.set(user.id, playerData);
+				const playerData = await omedaAPI.getPlayer(user.player_id);
+				playersData.set(user.player_id, playerData);
 			} catch (error) {
-				console.error(`Failed to load data for ${user.id}:`, error);
+				console.error(`Failed to load data for ${user.player_id}:`, error);
 			}
 		}
 		sortUsersByRank();
@@ -45,8 +47,8 @@
 	// Sort users by rank (higher VP first)
 	function sortUsersByRank() {
 		sortedUsers = [...users].sort((a, b) => {
-			const playerA = playersData.get(a.id);
-			const playerB = playersData.get(b.id);
+			const playerA = playersData.get(a.player_id);
+			const playerB = playersData.get(b.player_id);
 
 			// Sort by VP total (higher first)
 			const vpA = playerA?.vp_total || 0;
@@ -58,8 +60,15 @@
 
 	// Preload game data and load users from storage
 	onMount(() => {
-		trackedUsersStore.loadFromStorage();
+		supabaseTrackedUsers.init();
 		gameData.preloadAll().catch(console.error);
+
+		// Subscribe to real-time changes if Supabase is configured
+		const unsubscribe = supabaseTrackedUsers.subscribeToChanges();
+
+		return () => {
+			if (unsubscribe) unsubscribe();
+		};
 	});
 </script>
 
