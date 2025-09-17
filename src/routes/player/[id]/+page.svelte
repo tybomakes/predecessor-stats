@@ -328,68 +328,61 @@
 	const kda = $derived(player ? ((player.wins || 0) / Math.max(1, player.losses || 1)).toFixed(2) : '-');
 
 	// Get player's main role from hero stats or player object
-	const mainRole = $derived(() => {
-		// First check if player has a main_role field directly
-		if (player?.main_role) {
-			return player.main_role;
-		}
-
-		if (!heroStats || heroStats.length === 0) return 'Unknown';
-		const roleCounts: Record<string, number> = {};
-		heroStats.forEach(stat => {
-			if (stat.role) {
-				roleCounts[stat.role] = (roleCounts[stat.role] || 0) + (stat.games_played || 0);
-			}
-		});
-		const sortedRoles = Object.entries(roleCounts).sort(([,a], [,b]) => b - a);
-		return sortedRoles.length > 0 ? sortedRoles[0][0] : 'Unknown';
-	})();
+	const mainRole = $derived(
+		player?.main_role || (() => {
+			if (!heroStats || heroStats.length === 0) return 'Unknown';
+			const roleCounts: Record<string, number> = {};
+			heroStats.forEach(stat => {
+				if (stat.role) {
+					roleCounts[stat.role] = (roleCounts[stat.role] || 0) + (stat.games_played || 0);
+				}
+			});
+			const sortedRoles = Object.entries(roleCounts).sort(([,a], [,b]) => b - a);
+			return sortedRoles.length > 0 ? sortedRoles[0][0] : 'Unknown';
+		})()
+	);
 
 	// Get player's favorite (most played) hero
-	const favoriteHero = $derived(() => {
-		// First check if player has a favorite_hero field directly
-		if (player?.favorite_hero) {
-			console.log('Using player.favorite_hero:', player.favorite_hero);
-			return player.favorite_hero;
-		}
+	const favoriteHero = $derived(
+		player?.favorite_hero || (() => {
+			// Fallback to heroStats if available
+			console.log('Computing favorite hero, heroStats:', heroStats);
+			console.log('Heroes available:', heroes.length);
 
-		// Fallback to heroStats if available
-		console.log('Computing favorite hero, heroStats:', heroStats);
-		console.log('Heroes available:', heroes.length);
+			if (!heroStats || heroStats.length === 0 || heroes.length === 0) {
+				console.log('No hero stats or heroes data available');
+				return null;
+			}
+			// Sort by games played (handle both games_played and total_games fields)
+			const sorted = [...heroStats].sort((a, b) => {
+				const aGames = a.games_played || a.total_games || a.matches_played || 0;
+				const bGames = b.games_played || b.total_games || b.matches_played || 0;
+				return bGames - aGames;
+			});
 
-		if (!heroStats || heroStats.length === 0 || heroes.length === 0) {
-			console.log('No hero stats or heroes data available');
-			return null;
-		}
-		// Sort by games played (handle both games_played and total_games fields)
-		const sorted = [...heroStats].sort((a, b) => {
-			const aGames = a.games_played || a.total_games || a.matches_played || 0;
-			const bGames = b.games_played || b.total_games || b.matches_played || 0;
-			return bGames - aGames;
-		});
+			console.log('Sorted hero stats (top 3):', sorted.slice(0, 3));
 
-		console.log('Sorted hero stats (top 3):', sorted.slice(0, 3));
+			if (sorted.length === 0) {
+				console.log('No hero stats after sorting');
+				return null;
+			}
 
-		if (sorted.length === 0) {
-			console.log('No hero stats after sorting');
-			return null;
-		}
+			// Get the hero with most games (should be > 0)
+			const topHeroStat = sorted[0];
+			const gamesPlayed = topHeroStat.games_played || topHeroStat.total_games || topHeroStat.matches_played || 0;
 
-		// Get the hero with most games (should be > 0)
-		const topHeroStat = sorted[0];
-		const gamesPlayed = topHeroStat.games_played || topHeroStat.total_games || topHeroStat.matches_played || 0;
+			if (gamesPlayed === 0) {
+				console.log('Top hero has 0 games played');
+				return null;
+			}
 
-		if (gamesPlayed === 0) {
-			console.log('Top hero has 0 games played');
-			return null;
-		}
-
-		const heroId = topHeroStat.hero_id;
-		const hero = heroes.find(h => h.id === heroId);
-		console.log('Looking for hero with ID:', heroId);
-		console.log('Found hero:', hero);
-		return hero || null;
-	});
+			const heroId = topHeroStat.hero_id;
+			const hero = heroes.find(h => h.id === heroId);
+			console.log('Looking for hero with ID:', heroId);
+			console.log('Found hero:', hero);
+			return hero || null;
+		})()
+	);
 
 	// Helper to format game mode names
 	function formatGameMode(mode: string | undefined): string {
