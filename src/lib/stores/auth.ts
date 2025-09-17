@@ -102,7 +102,7 @@ function createAuthStore() {
 					const locked = newCount >= AUTH_CONFIG.maxAttempts;
 					const lockedUntil = locked ? Date.now() + AUTH_CONFIG.lockoutDuration : null;
 
-					if (locked && browser) {
+					if (locked && browser && lockedUntil !== null) {
 						localStorage.setItem('predecessor_lockout', lockedUntil.toString());
 					}
 

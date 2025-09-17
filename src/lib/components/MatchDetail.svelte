@@ -136,7 +136,7 @@
 									<!-- Damage -->
 									<div class="text-center">
 										<p class="font-bold text-predecessor-orange">
-											{((player.total_damage_dealt_to_heroes || player.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k
+											{((player.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k
 										</p>
 										<p class="text-xs text-gray-500">Damage</p>
 									</div>
@@ -257,7 +257,7 @@
 									<!-- Damage -->
 									<div class="text-center">
 										<p class="font-bold text-predecessor-orange">
-											{((player.total_damage_dealt_to_heroes || player.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k
+											{((player.damage_dealt_to_heroes || 0) / 1000).toFixed(1)}k
 										</p>
 										<p class="text-xs text-gray-500">Damage</p>
 									</div>

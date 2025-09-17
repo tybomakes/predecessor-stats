@@ -113,6 +113,7 @@
 	async function checkCurrentMatch() {
 		try {
 			// Get the player's most recent match
+			if (!playerId) return;
 			const recentMatches = await omedaAPI.getPlayerMatches(playerId, { per_page: 1 });
 			if (recentMatches.matches && recentMatches.matches.length > 0) {
 				const match = recentMatches.matches[0];
@@ -264,20 +265,22 @@
 		editingBuild = null;
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		// Load hero and item data for images
-		try {
-			[heroes, items] = await Promise.all([
-				gameData.getHeroes(),
-				gameData.getItems()
-			]);
-		} catch (err) {
-			console.error('Failed to load game data:', err);
-		}
+		(async () => {
+			try {
+				[heroes, items] = await Promise.all([
+					gameData.getHeroes(),
+					gameData.getItems()
+				]);
+			} catch (err) {
+				console.error('Failed to load game data:', err);
+			}
 
-		await loadPlayerData();
-		checkCurrentMatch();
-		loadBuilds();
+			await loadPlayerData();
+			checkCurrentMatch();
+			loadBuilds();
+		})();
 
 		// Clean up interval on unmount
 		return () => {
@@ -461,7 +464,7 @@
 								<p class="text-sm text-gray-400">Game Mode: {currentMatch.game_mode}</p>
 								<p class="text-sm text-gray-400">Duration: {Math.floor(currentMatch.game_duration / 60)}m</p>
 							</div>
-							<p class="text-xs text-gray-500">Started: {new Date(currentMatch.started_at).toLocaleTimeString()}</p>
+							<p class="text-xs text-gray-500">Started: {new Date(currentMatch.started_at || currentMatch.start_time || '').toLocaleTimeString()}</p>
 						</div>
 
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -568,7 +571,7 @@
 													{#if data.recentMatches.length > 0}
 														<div class="text-xs space-y-1">
 															{#each data.recentMatches.slice(0, 3) as match}
-																{@const playerData = match.players?.find(p => getPlayerId(p) === playerId)}
+																{@const playerData = match.players?.find((p: any) => getPlayerId(p) === playerId)}
 																{#if playerData}
 																	<div class="flex items-center justify-between">
 																		<span>
@@ -794,7 +797,7 @@
 {#if selectedMatch}
 	<MatchDetail
 		match={selectedMatch}
-		{playerId}
+		playerId={playerId || ''}
 		onClose={() => selectedMatch = null}
 	/>
 {/if}

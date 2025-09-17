@@ -301,7 +301,7 @@ export const omedaAPI = {
 		if (recentMatches.matches && recentMatches.matches.length > 0) {
 			const lastMatch = recentMatches.matches[0];
 			// Check if match ended recently (within last hour could mean still in progress)
-			const matchEndTime = new Date(lastMatch.ended_at).getTime();
+			const matchEndTime = new Date(lastMatch.ended_at || lastMatch.end_time || '').getTime();
 			const now = Date.now();
 			const timeSinceEnd = now - matchEndTime;
 
