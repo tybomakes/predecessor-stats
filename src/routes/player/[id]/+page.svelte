@@ -109,6 +109,25 @@
 				heroStats = heroStatsData?.hero_statistics || [];
 				commonTeammates = teammatesData?.teammates || [];
 
+				// Debug logging to see what data we're getting
+				console.log('Player data fields:', {
+					total_matches_played: playerData?.total_matches_played,
+					games_played: playerData?.games_played,
+					total_matches_won: playerData?.total_matches_won,
+					wins: playerData?.wins,
+					total_matches_lost: playerData?.total_matches_lost,
+					losses: playerData?.losses,
+					avg_kda_ratio: playerData?.avg_kda_ratio,
+					kda_ratio: playerData?.kda_ratio,
+					last_24_hours_wins: playerData?.last_24_hours_wins,
+					last_24_hours_losses: playerData?.last_24_hours_losses,
+					full_data: playerData
+				});
+				console.log('Player stats object:', statsData);
+				console.log('Hero stats response:', heroStatsData);
+				console.log('Hero stats array:', heroStats);
+				console.log('First hero stat:', heroStats?.[0]);
+
 				// Cache the data
 				cache.set(cacheKeys.player(playerId), playerData, CACHE_DURATION);
 				cache.set(cacheKeys.playerMatches(playerId), matchData, CACHE_DURATION);
@@ -326,16 +345,41 @@
 
 	// Get player's favorite (most played) hero
 	const favoriteHero = $derived(() => {
-		if (!heroStats || heroStats.length === 0) return null;
+		console.log('Computing favorite hero, heroStats:', heroStats);
+		console.log('Heroes available:', heroes.length);
+
+		if (!heroStats || heroStats.length === 0 || heroes.length === 0) {
+			console.log('No hero stats or heroes data available');
+			return null;
+		}
 		// Sort by games played (handle both games_played and total_games fields)
 		const sorted = [...heroStats].sort((a, b) => {
-			const aGames = a.games_played || a.total_games || 0;
-			const bGames = b.games_played || b.total_games || 0;
+			const aGames = a.games_played || a.total_games || a.matches_played || 0;
+			const bGames = b.games_played || b.total_games || b.matches_played || 0;
 			return bGames - aGames;
 		});
-		if (sorted.length === 0 || sorted[0].games_played === 0) return null;
-		const heroId = sorted[0].hero_id;
-		return heroes.find(h => h.id === heroId) || null;
+
+		console.log('Sorted hero stats (top 3):', sorted.slice(0, 3));
+
+		if (sorted.length === 0) {
+			console.log('No hero stats after sorting');
+			return null;
+		}
+
+		// Get the hero with most games (should be > 0)
+		const topHeroStat = sorted[0];
+		const gamesPlayed = topHeroStat.games_played || topHeroStat.total_games || topHeroStat.matches_played || 0;
+
+		if (gamesPlayed === 0) {
+			console.log('Top hero has 0 games played');
+			return null;
+		}
+
+		const heroId = topHeroStat.hero_id;
+		const hero = heroes.find(h => h.id === heroId);
+		console.log('Looking for hero with ID:', heroId);
+		console.log('Found hero:', hero);
+		return hero || null;
 	});
 
 	// Helper to format game mode names
@@ -429,7 +473,11 @@
 			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Games</p>
-					<p class="text-2xl font-bold">{player.total_matches_played || player.games_played || playerStats?.games_played || playerStats?.total_matches_played || 0}</p>
+					<p class="text-2xl font-bold">{(() => {
+						const value = player.total_matches_played || player.games_played || playerStats?.games_played || playerStats?.total_matches_played || 0;
+						console.log('Games - player.total_matches_played:', player.total_matches_played, 'player.games_played:', player.games_played, 'playerStats:', playerStats);
+						return value;
+					})()}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Wins</p>
