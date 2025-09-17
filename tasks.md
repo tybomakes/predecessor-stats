@@ -176,3 +176,20 @@ npm run check
   - LocalStorage persistence per player
   - Build editor modal with hero/item selection
   - Skill order grid matching omeda.city style
+- Converted BuildCreator to step-by-step wizard to prevent crashes
+- Changed builds from modal to inline component in Builds tab
+- Added BuildDetail component for viewing full build information
+- Fixed API field mapping issues throughout application
+- Redesigned dashboard:
+  - Removed "Predecessor Stats Tracker" title and subtitle
+  - Changed header to "BLG Predecessor Stats"
+  - Simplified to just show player cards
+- Enhanced player profile:
+  - Added favorite (most played) hero as profile image
+  - Fixed stats display with correct field mappings (games_played, wins, losses)
+  - Shows win/loss rates for last 24 hours
+- Redesigned match history:
+  - Added prominent Victory/Defeat badges
+  - Added VP gain/loss display
+  - Added relative time display ("about 12 hours ago")
+  - Improved visual hierarchy matching omeda.city style

@@ -230,3 +230,55 @@ export const LIVE_MATCH_POLL_INTERVAL = 30 * 1000; // 30 seconds
 - All users share the same instance
 - No backend or database required
 - Respects omeda.city API usage guidelines
+
+## Important Implementation Details
+
+### API Field Mapping
+The Omeda.city API has inconsistent field naming across endpoints. Common mappings:
+- Player ID: `id` or `player_id`
+- Player name: `display_name` or `player_name`
+- Match end time: `end_time` or `ended_at`
+- Games played: `games_played` or `total_matches_played`
+
+### Svelte 5 Runes
+This project uses Svelte 5 with the new runes syntax:
+- `$state()` for reactive state
+- `$derived()` for computed values
+- `$props()` for component properties
+- `$effect()` for side effects
+
+### Vercel Proxy Configuration
+Due to CORS and Cloudflare bot protection, API calls are routed through Vercel serverless functions:
+- `/api/omeda/[...path]` proxies to `https://omeda.city/api/[path]`
+- Adds necessary headers and handles bot protection challenges
+- Caches successful responses for 5 minutes
+
+### BuildCreator Implementation
+The BuildCreator uses a step-by-step wizard pattern to prevent crashes:
+1. Build Title
+2. Hero & Role Selection
+3. Item Selection (6 items)
+4. Skill Order
+5. Notes & Review
+
+Builds are stored in localStorage per player with the structure:
+```javascript
+{
+  id: string,
+  name: string,
+  hero_id: number,
+  role: string,
+  items: number[],
+  skill_order: string[],
+  description: string,
+  notes: string
+}
+```
+
+### UI/UX Decisions
+- Dashboard shows only player cards without title/subtitle
+- Header displays "BLG Predecessor Stats"
+- Player profile shows favorite (most played) hero as profile image
+- Match history uses Victory/Defeat badges with VP changes
+- Relative time display for better user experience
+- Builds are inline components, not modals

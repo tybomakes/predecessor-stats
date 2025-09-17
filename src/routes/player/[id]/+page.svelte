@@ -416,27 +416,27 @@
 			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Games</p>
-					<p class="text-2xl font-bold">{playerStats?.games_played || player.total_matches_played || 0}</p>
+					<p class="text-2xl font-bold">{player.games_played || player.total_matches_played || playerStats?.games_played || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Wins</p>
-					<p class="text-2xl font-bold text-green-500">{playerStats?.matches_won || player.total_matches_won || 0}</p>
+					<p class="text-2xl font-bold text-green-500">{player.wins || player.total_matches_won || playerStats?.matches_won || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Losses</p>
-					<p class="text-2xl font-bold text-red-500">{playerStats?.matches_lost || player.total_matches_lost || 0}</p>
+					<p class="text-2xl font-bold text-red-500">{player.losses || player.total_matches_lost || playerStats?.matches_lost || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">24hr W/L</p>
 					<p class="text-2xl font-bold">
-						<span class="text-green-500">{playerStats?.last_24_hours_wins || 0}</span>
+						<span class="text-green-500">{player.last_24_hours_wins || playerStats?.last_24_hours_wins || 0}</span>
 						<span class="text-gray-400">/</span>
-						<span class="text-red-500">{playerStats?.last_24_hours_losses || 0}</span>
+						<span class="text-red-500">{player.last_24_hours_losses || playerStats?.last_24_hours_losses || 0}</span>
 					</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Avg KDA</p>
-					<p class="text-2xl font-bold">{playerStats?.avg_kda_ratio ? playerStats.avg_kda_ratio.toFixed(2) : '-'}</p>
+					<p class="text-2xl font-bold">{player.kda_ratio || playerStats?.kda_ratio || playerStats?.avg_kda_ratio || '-'}</p>
 				</div>
 			</div>
 		</div>
