@@ -69,8 +69,8 @@
 		<p class="text-xl text-gray-400">Track your stats, analyze matches, and improve your gameplay</p>
 	</div>
 
-	<!-- Users Grid - Organized in rows -->
-	<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+	<!-- Users Grid - 4 cards per row -->
+	<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
 		{#each sortedUsers as user}
 			<PlayerCard {user} />
 		{/each}
