@@ -55,15 +55,5 @@
 		<main class="container mx-auto px-4 py-8 flex-1">
 			{@render children()}
 		</main>
-
-		<!-- Footer -->
-		<footer class="border-t border-predecessor-border mt-auto">
-			<div class="container mx-auto px-4 py-6">
-				<div class="flex flex-col md:flex-row items-center justify-between text-sm text-gray-400">
-					<p>Powered by <a href="https://omeda.city" target="_blank" rel="noopener" class="text-predecessor-orange hover:underline">Omeda.city API</a></p>
-					<p class="mt-2 md:mt-0">Not affiliated with Omeda Studios</p>
-				</div>
-			</div>
-		</footer>
 	</div>
 </AuthGuard>
