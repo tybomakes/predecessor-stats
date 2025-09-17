@@ -49,18 +49,26 @@ export interface Hero {
 	id: number;
 	name: string;
 	display_name: string;
-	image_url: string;
+	image?: string;
+	image_url?: string;
 	abilities: any[];
 	stats: any;
+	classes?: string[];
+	roles?: string[];
 }
 
 export interface Item {
 	id: number;
 	name: string;
 	display_name: string;
-	image_url: string;
-	price: number;
-	stats: any;
+	image?: string;
+	image_url?: string;
+	price?: number;
+	total_price?: number;
+	stats?: any;
+	slot_type?: string;
+	rarity?: string;
+	effects?: any[];
 }
 
 // Fetch options builder

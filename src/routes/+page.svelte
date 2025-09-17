@@ -2,8 +2,14 @@
 	import { onMount } from 'svelte';
 	import PlayerCard from '$lib/components/PlayerCard.svelte';
 	import { trackedUsers } from '$lib/stores/users';
+	import { gameData } from '$lib/api/gameData';
 
 	let users = $state($trackedUsers);
+
+	// Preload game data on mount
+	onMount(() => {
+		gameData.preloadAll().catch(console.error);
+	});
 </script>
 
 <svelte:head>

@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { omedaAPI, type Player, type Match } from '$lib/api/omeda';
+	import { omedaAPI, type Player, type Match, type Hero } from '$lib/api/omeda';
 	import { cache, cacheKeys } from '$lib/api/cache';
-	import { CACHE_DURATION } from '$lib/config/api';
+	import { CACHE_DURATION, getImageUrl } from '$lib/config/api';
+	import { gameData } from '$lib/api/gameData';
 
 	const playerId = $page.params.id;
 	let player = $state<Player | null>(null);
 	let matches = $state<Match[]>([]);
 	let playerStats = $state<any>(null);
 	let heroStats = $state<any[]>([]);
+	let heroes = $state<Hero[]>([]);
 	let loading = $state(true);
 	let error = $state('');
 	let refreshing = $state(false);
@@ -71,7 +73,13 @@
 		await loadPlayerData(false);
 	}
 
-	onMount(() => {
+	onMount(async () => {
+		// Load hero data for images
+		try {
+			heroes = await gameData.getHeroes();
+		} catch (err) {
+			console.error('Failed to load hero data:', err);
+		}
 		loadPlayerData();
 	});
 
@@ -257,9 +265,18 @@
 							{#each heroStats.slice(0, 5) as hero}
 								<div class="flex items-center justify-between p-3 bg-predecessor-dark rounded-lg">
 									<div class="flex items-center space-x-3">
-										<div class="w-10 h-10 rounded bg-predecessor-border flex items-center justify-center">
-											<span class="text-xs">{hero.hero_name?.charAt(0) || '?'}</span>
-										</div>
+										{@const heroData = heroes.find(h => h.display_name === hero.hero_name || h.name === hero.hero_name)}
+										{#if heroData?.image || heroData?.image_url}
+											<img
+												src={getImageUrl(heroData.image || heroData.image_url)}
+												alt={heroData.display_name}
+												class="w-10 h-10 rounded object-cover"
+											/>
+										{:else}
+											<div class="w-10 h-10 rounded bg-predecessor-border flex items-center justify-center">
+												<span class="text-xs">{hero.hero_name?.charAt(0) || '?'}</span>
+											</div>
+										{/if}
 										<div>
 											<p class="font-semibold">{hero.hero_name || 'Unknown'}</p>
 											<p class="text-sm text-gray-400">{hero.role || 'Any Role'}</p>
@@ -292,10 +309,19 @@
 										<div class="flex-1 p-4">
 											<div class="flex items-center justify-between">
 												<div class="flex items-center space-x-4">
-													<!-- Hero Icon Placeholder -->
-													<div class="w-12 h-12 rounded bg-predecessor-border flex items-center justify-center">
-														<span class="text-sm">{playerMatch?.hero_name?.substring(0, 3) || '?'}</span>
-													</div>
+													<!-- Hero Icon -->
+													{@const hero = heroes.find(h => h.display_name === playerMatch?.hero_name || h.name === playerMatch?.hero_name)}
+													{#if hero?.image || hero?.image_url}
+														<img
+															src={getImageUrl(hero.image || hero.image_url)}
+															alt={hero.display_name}
+															class="w-12 h-12 rounded object-cover"
+														/>
+													{:else}
+														<div class="w-12 h-12 rounded bg-predecessor-border flex items-center justify-center">
+															<span class="text-sm">{playerMatch?.hero_name?.substring(0, 3) || '?'}</span>
+														</div>
+													{/if}
 													<div>
 														<div class="flex items-center space-x-2">
 															<p class="font-semibold">{playerMatch?.hero_name || 'Unknown Hero'}</p>
@@ -354,9 +380,18 @@
 								<div class="bg-predecessor-dark rounded-lg p-4">
 									<div class="flex items-center justify-between mb-3">
 										<div class="flex items-center space-x-3">
-											<div class="w-12 h-12 rounded bg-predecessor-border flex items-center justify-center">
-												<span class="text-sm">{hero.hero_name?.substring(0, 3) || '?'}</span>
-											</div>
+											{@const heroData = heroes.find(h => h.display_name === hero.hero_name || h.name === hero.hero_name)}
+											{#if heroData?.image || heroData?.image_url}
+												<img
+													src={getImageUrl(heroData.image || heroData.image_url)}
+													alt={heroData.display_name}
+													class="w-12 h-12 rounded object-cover"
+												/>
+											{:else}
+												<div class="w-12 h-12 rounded bg-predecessor-border flex items-center justify-center">
+													<span class="text-sm">{hero.hero_name?.substring(0, 3) || '?'}</span>
+												</div>
+											{/if}
 											<div>
 												<p class="font-semibold">{hero.hero_name || 'Unknown'}</p>
 												<p class="text-sm text-gray-400">{hero.role || 'Any Role'}</p>

@@ -33,7 +33,9 @@
 	class="block bg-predecessor-card border border-predecessor-border rounded-lg p-6 hover:border-predecessor-orange/50 transition-all hover:shadow-lg hover:shadow-predecessor-orange/10"
 >
 	<div class="flex items-center justify-between mb-4">
-		<div class="w-12 h-12 bg-gradient-to-br from-predecessor-orange to-amber-600 rounded-full"></div>
+		<div class="w-12 h-12 bg-gradient-to-br from-predecessor-orange to-amber-600 rounded-full flex items-center justify-center">
+			<span class="text-xl font-bold text-white">{user.displayName.charAt(0)}</span>
+		</div>
 		<div class="text-right">
 			<span class="text-xs text-gray-500 uppercase tracking-wide">Rank</span>
 			{#if loading}
