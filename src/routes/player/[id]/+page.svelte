@@ -87,7 +87,8 @@
 				roleCounts[stat.role] = (roleCounts[stat.role] || 0) + stat.games_played;
 			}
 		});
-		return Object.entries(roleCounts).sort(([,a], [,b]) => b - a)[0]?.[0] || 'Unknown';
+		const sortedRoles = Object.entries(roleCounts).sort(([,a], [,b]) => b - a);
+		return sortedRoles.length > 0 ? sortedRoles[0][0] : 'Unknown';
 	});
 </script>
 
@@ -120,7 +121,7 @@
 				<div class="flex items-center space-x-6">
 					<!-- Avatar Placeholder -->
 					<div class="w-24 h-24 rounded-lg bg-gradient-to-br from-predecessor-orange/20 to-predecessor-orange/10 flex items-center justify-center border border-predecessor-orange/30">
-						<span class="text-4xl font-bold text-predecessor-orange">{player.name.charAt(0)}</span>
+						<span class="text-4xl font-bold text-predecessor-orange">{player.name?.charAt(0) || '?'}</span>
 					</div>
 					<div>
 						<h1 class="text-3xl font-bold mb-2">{player.name}</h1>
@@ -128,7 +129,9 @@
 							<span class="text-predecessor-orange font-semibold text-lg">{player.rank_title || 'Unranked'}</span>
 							<span class="text-gray-400">Rank #{player.rank || '-'}</span>
 							<span class="text-gray-400">MMR: {player.mmr || '-'}</span>
-							<span class="text-gray-400">VP: {player.vp || 0}</span>
+							{#if player.vp !== undefined}
+								<span class="text-gray-400">VP: {player.vp}</span>
+							{/if}
 						</div>
 						<div class="flex items-center space-x-4 text-sm text-gray-400 mt-2">
 							<span>Main Role: <span class="text-white">{mainRole()}</span></span>
