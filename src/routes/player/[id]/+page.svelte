@@ -6,6 +6,7 @@
 	import { CACHE_DURATION, getImageUrl } from '$lib/config/api';
 	import { gameData } from '$lib/api/gameData';
 	import BuildRecommendation from '$lib/components/BuildRecommendation.svelte';
+	import MatchDetail from '$lib/components/MatchDetail.svelte';
 
 	const playerId = $page.params.id;
 	let player = $state<Player | null>(null);
@@ -22,6 +23,17 @@
 	let activeTab = $state('current');
 	let autoRefresh = $state(false);
 	let refreshInterval: NodeJS.Timeout | null = null;
+	let selectedMatch = $state<Match | null>(null);
+
+	// Helper to get player ID (handles both id and player_id fields)
+	function getPlayerId(player: any): string {
+		return player.id || player.player_id || '';
+	}
+
+	// Helper to get player name (handles both display_name and player_name fields)
+	function getPlayerName(player: any): string {
+		return player.display_name || player.player_name || 'Unknown';
+	}
 
 	async function loadPlayerData(useCache = true) {
 		if (!playerId) {
@@ -90,8 +102,8 @@
 				const match = recentMatches.matches[0];
 
 				// Check if match is recent (within last hour)
-				const matchEndTime = new Date(match.ended_at).getTime();
-				const matchStartTime = new Date(match.started_at).getTime();
+				const matchEndTime = new Date(match.end_time || match.ended_at || '').getTime();
+				const matchStartTime = new Date(match.start_time || match.started_at || '').getTime();
 				const now = Date.now();
 
 				// If match started recently and duration suggests it might be ongoing
@@ -114,7 +126,7 @@
 		if (!match.players) return;
 
 		// Find which team our player is on
-		const ourPlayer = match.players.find(p => p.player_id === playerId);
+		const ourPlayer = match.players.find(p => getPlayerId(p) === playerId);
 		if (!ourPlayer) return;
 
 		const ourTeam = ourPlayer.team;
@@ -123,8 +135,9 @@
 		// Load build data for each opponent
 		for (const opponent of opponents) {
 			try {
+				const opponentId = getPlayerId(opponent);
 				// Get the opponent's recent matches with the same hero
-				const heroMatches = await omedaAPI.getPlayerMatches(opponent.player_id, {
+				const heroMatches = await omedaAPI.getPlayerMatches(opponentId, {
 					per_page: 5,
 					filter: { hero_id: opponent.hero_id }
 				});
@@ -136,17 +149,17 @@
 					// Try to get builds by this player for this specific hero
 					const playerBuilds = await omedaAPI.getBuilds({
 						filter: {
-							player_id: opponent.player_id,
+							player_id: opponentId,
 							hero_id: opponent.hero_id
 						}
 					});
 
 					if (playerBuilds && playerBuilds.length > 0) {
 						builds = playerBuilds.slice(0, 2); // Get top 2 player builds
-						console.log(`Found ${playerBuilds.length} builds by ${opponent.player_name} for ${opponent.hero_name}`);
+						console.log(`Found ${playerBuilds.length} builds by ${getPlayerName(opponent)} for ${opponent.hero_name}`);
 					}
 				} catch (error) {
-					console.error(`Failed to get player builds for ${opponent.player_name}:`, error);
+					console.error(`Failed to get player builds for ${getPlayerName(opponent)}:`, error);
 				}
 
 				// If no player-specific builds, get popular builds for this hero/role
@@ -169,13 +182,13 @@
 					}
 				}
 
-				opponentBuilds.set(opponent.player_id, {
+				opponentBuilds.set(opponentId, {
 					player: opponent,
 					recentMatches: heroMatches.matches || [],
 					builds: builds
 				});
 			} catch (error) {
-				console.error(`Failed to load builds for ${opponent.player_name}:`, error);
+				console.error(`Failed to load builds for ${getPlayerName(opponent)}:`, error);
 			}
 		}
 	}
@@ -397,9 +410,9 @@
 					</div>
 
 					{#if currentMatch}
-						{@const ourPlayer = currentMatch.players?.find(p => p.player_id === playerId)}
-						{@const dawnTeam = currentMatch.players?.filter(p => p.team === 'Dawn') || []}
-						{@const duskTeam = currentMatch.players?.filter(p => p.team === 'Dusk') || []}
+						{@const ourPlayer = currentMatch.players?.find(p => getPlayerId(p) === playerId)}
+						{@const dawnTeam = currentMatch.players?.filter(p => p.team === 'Dawn' || p.team === 'dawn') || []}
+						{@const duskTeam = currentMatch.players?.filter(p => p.team === 'Dusk' || p.team === 'dusk') || []}
 
 						<div class="bg-predecessor-dark rounded-lg p-4 mb-6">
 							<div class="flex items-center justify-between mb-2">
@@ -415,8 +428,8 @@
 								<h4 class="font-bold mb-3 text-blue-400">Dawn Team {ourPlayer?.team === 'Dawn' ? '(Your Team)' : ''}</h4>
 								<div class="space-y-3">
 									{#each dawnTeam as player}
-										{@const isOurPlayer = player.player_id === playerId}
-										{@const heroImage = heroes.find(h => h.display_name === player.hero_name || h.name === player.hero_name)}
+										{@const isOurPlayer = getPlayerId(player) === playerId}
+										{@const heroImage = heroes.find(h => h.id === player.hero_id)}
 										<div class="flex items-center justify-between p-2 rounded {isOurPlayer ? 'bg-blue-500/10' : ''}">
 											<div class="flex items-center space-x-3">
 												{#if heroImage?.image || heroImage?.image_url}
@@ -432,9 +445,9 @@
 												{/if}
 												<div>
 													<p class="font-semibold" class:text-predecessor-orange={isOurPlayer}>
-														{player.player_name}
+														{getPlayerName(player)}
 													</p>
-													<p class="text-xs text-gray-400">{player.hero_name} • {player.role}</p>
+													<p class="text-xs text-gray-400">{heroImage?.display_name || 'Unknown'} • {player.role}</p>
 												</div>
 											</div>
 											<div class="text-right">
@@ -452,9 +465,9 @@
 								<h4 class="font-bold mb-3 text-purple-400">Dusk Team {ourPlayer?.team === 'Dusk' ? '(Your Team)' : ''}</h4>
 								<div class="space-y-3">
 									{#each duskTeam as player}
-										{@const isOurPlayer = player.player_id === playerId}
-										{@const heroImage = heroes.find(h => h.display_name === player.hero_name || h.name === player.hero_name)}
-										{@const buildData = opponentBuilds.get(player.player_id)}
+										{@const isOurPlayer = getPlayerId(player) === playerId}
+										{@const heroImage = heroes.find(h => h.id === player.hero_id)}
+										{@const buildData = opponentBuilds.get(getPlayerId(player))}
 										<div class="flex items-center justify-between p-2 rounded {isOurPlayer ? 'bg-purple-500/10' : ''}">
 											<div class="flex items-center space-x-3">
 												{#if heroImage?.image || heroImage?.image_url}
@@ -470,9 +483,9 @@
 												{/if}
 												<div>
 													<p class="font-semibold" class:text-predecessor-orange={isOurPlayer}>
-														{player.player_name}
+														{getPlayerName(player)}
 													</p>
-													<p class="text-xs text-gray-400">{player.hero_name} • {player.role}</p>
+													<p class="text-xs text-gray-400">{heroImage?.display_name || 'Unknown'} • {player.role}</p>
 												</div>
 											</div>
 											<div class="text-right">
@@ -513,7 +526,7 @@
 													{#if data.recentMatches.length > 0}
 														<div class="text-xs space-y-1">
 															{#each data.recentMatches.slice(0, 3) as match}
-																{@const playerData = match.players?.find(p => p.player_id === playerId)}
+																{@const playerData = match.players?.find(p => getPlayerId(p) === playerId)}
 																{#if playerData}
 																	<div class="flex items-center justify-between">
 																		<span>
@@ -566,10 +579,12 @@
 					{#if matches.length > 0}
 						<div class="space-y-3">
 							{#each matches as match}
-								{@const playerMatch = match.players?.find(p => p.player_id === playerId)}
+								{@const playerMatch = match.players?.find(p => getPlayerId(p) === playerId)}
 								{@const isWin = playerMatch?.team === match.winning_team}
-								{@const hero = heroes.find(h => h.display_name === playerMatch?.hero_name || h.name === playerMatch?.hero_name)}
-								<div class="bg-predecessor-dark rounded-lg overflow-hidden hover:bg-predecessor-border/30 transition-colors">
+								{@const hero = heroes.find(h => h.id === playerMatch?.hero_id)}
+								<button
+									onclick={() => selectedMatch = match}
+									class="w-full text-left bg-predecessor-dark rounded-lg overflow-hidden hover:bg-predecessor-border/30 transition-colors cursor-pointer">
 									<div class="flex">
 										<!-- Win/Loss Indicator -->
 										<div class="w-1" class:bg-green-500={isWin} class:bg-red-500={!isWin}></div>
@@ -591,7 +606,7 @@
 													{/if}
 													<div>
 														<div class="flex items-center space-x-2">
-															<p class="font-semibold">{playerMatch?.hero_name || 'Unknown Hero'}</p>
+															<p class="font-semibold">{hero?.display_name || 'Unknown Hero'}</p>
 															<span class="text-xs px-2 py-1 bg-predecessor-border rounded">{playerMatch?.role || 'Any'}</span>
 														</div>
 														<p class="text-sm text-gray-400">{match.game_mode} • {Math.floor(match.game_duration / 60)}m {match.game_duration % 60}s</p>
@@ -637,14 +652,14 @@
 
 													<!-- Time -->
 													<div class="text-right text-sm text-gray-400">
-														<p>{new Date(match.ended_at).toLocaleDateString()}</p>
-														<p>{new Date(match.ended_at).toLocaleTimeString()}</p>
+														<p>{new Date(match.end_time || match.ended_at || '').toLocaleDateString()}</p>
+														<p>{new Date(match.end_time || match.ended_at || '').toLocaleTimeString()}</p>
 													</div>
 												</div>
 											</div>
 										</div>
 									</div>
-								</div>
+								</button>
 							{/each}
 						</div>
 					{:else}
@@ -656,7 +671,7 @@
 					{#if heroStats && heroStats.length > 0}
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 							{#each heroStats as hero}
-								{@const heroData = heroes.find(h => h.display_name === hero.hero_name || h.name === hero.hero_name)}
+								{@const heroData = heroes.find(h => h.id === hero.hero_id || h.display_name === hero.hero_name || h.name === hero.hero_name)}
 								<div class="bg-predecessor-dark rounded-lg p-4">
 									<div class="flex items-center justify-between mb-3">
 										<div class="flex items-center space-x-3">
@@ -787,3 +802,12 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Match Detail Modal -->
+{#if selectedMatch}
+	<MatchDetail
+		match={selectedMatch}
+		{playerId}
+		onClose={() => selectedMatch = null}
+	/>
+{/if}

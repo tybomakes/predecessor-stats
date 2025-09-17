@@ -31,16 +31,20 @@ export interface Match {
 	game_region: string;
 	game_duration: number;
 	winning_team: string;
-	started_at: string;
-	ended_at: string;
+	start_time?: string; // API returns this
+	end_time?: string; // API returns this
+	started_at?: string; // Some endpoints might use this
+	ended_at?: string; // Some endpoints might use this
 	players: MatchPlayer[];
 }
 
 export interface MatchPlayer {
-	player_id: string;
-	player_name: string;
+	id: string; // This is the player_id
+	player_id?: string; // Some endpoints might still use this
+	display_name: string; // This is the player name
+	player_name?: string; // Some endpoints might still use this
 	hero_id: number;
-	hero_name: string;
+	hero_name?: string; // This might not always be provided
 	role: string;
 	team: string;
 	kills: number;
