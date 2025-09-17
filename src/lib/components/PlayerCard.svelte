@@ -19,11 +19,17 @@
 		try {
 			loading = true;
 			error = null;
+			console.log('Fetching data for player:', user.id);
+
 			// Fetch both player info and statistics
 			const [player, stats] = await Promise.all([
 				omedaAPI.getPlayer(user.id),
 				omedaAPI.getPlayerStatistics(user.id)
 			]);
+
+			console.log('Player data received:', player);
+			console.log('Player stats received:', stats);
+
 			playerData = player;
 			playerStats = stats;
 		} catch (e) {

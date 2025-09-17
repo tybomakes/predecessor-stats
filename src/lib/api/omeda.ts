@@ -125,6 +125,7 @@ async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Prom
 	}
 
 	try {
+		console.log(`Fetching from: ${finalUrl}`);
 		const fetchOptions = buildFetchOptions();
 
 		// Add timeout to prevent hanging requests
@@ -139,13 +140,16 @@ async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Prom
 		clearTimeout(timeoutId);
 
 		if (!response.ok) {
+			console.error(`API Error Response:`, response.status, response.statusText);
 			throw new Error(`API Error: ${response.status} ${response.statusText}`);
 		}
 
 		const data = await response.json();
+		console.log(`Data received from ${endpoint}:`, data);
 		return data;
 	} catch (error) {
 		console.error(`Failed to fetch ${endpoint}:`, error);
+		console.error(`URL was: ${finalUrl}`);
 		if (browser && !USE_PROXY) {
 			throw new Error('CORS error: Please configure the Vercel proxy. See README for setup instructions.');
 		}
