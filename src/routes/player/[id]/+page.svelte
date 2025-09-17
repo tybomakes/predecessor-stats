@@ -327,18 +327,23 @@
 	// Calculate KDA using derived
 	const kda = $derived(player ? ((player.wins || 0) / Math.max(1, player.losses || 1)).toFixed(2) : '-');
 
-	// Get player's main role from hero stats
+	// Get player's main role from hero stats or player object
 	const mainRole = $derived(() => {
+		// First check if player has a main_role field directly
+		if (player?.main_role) {
+			return player.main_role;
+		}
+
 		if (!heroStats || heroStats.length === 0) return 'Unknown';
 		const roleCounts: Record<string, number> = {};
 		heroStats.forEach(stat => {
 			if (stat.role) {
-				roleCounts[stat.role] = (roleCounts[stat.role] || 0) + stat.games_played;
+				roleCounts[stat.role] = (roleCounts[stat.role] || 0) + (stat.games_played || 0);
 			}
 		});
 		const sortedRoles = Object.entries(roleCounts).sort(([,a], [,b]) => b - a);
 		return sortedRoles.length > 0 ? sortedRoles[0][0] : 'Unknown';
-	});
+	})();
 
 	// Get player's favorite (most played) hero
 	const favoriteHero = $derived(() => {
@@ -477,27 +482,31 @@
 			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Games</p>
-					<p class="text-2xl font-bold">{player?.games_played || player?.total_matches_played || playerStats?.games_played || playerStats?.total_matches_played || 0}</p>
+					<p class="text-2xl font-bold">{(() => {
+						const val = player?.games_played || player?.total_games_played || player?.matches_played || 0;
+						if (val === 0) console.log('Games fields:', { games_played: player?.games_played, total_games_played: player?.total_games_played, matches_played: player?.matches_played });
+						return val;
+					})()}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Wins</p>
-					<p class="text-2xl font-bold text-green-500">{player?.wins || player?.total_matches_won || playerStats?.wins || playerStats?.matches_won || playerStats?.total_matches_won || 0}</p>
+					<p class="text-2xl font-bold text-green-500">{player?.wins || player?.total_wins || player?.matches_won || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Losses</p>
-					<p class="text-2xl font-bold text-red-500">{player?.losses || player?.total_matches_lost || playerStats?.losses || playerStats?.matches_lost || playerStats?.total_matches_lost || 0}</p>
+					<p class="text-2xl font-bold text-red-500">{player?.losses || player?.total_losses || player?.matches_lost || 0}</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">24hr W/L</p>
 					<p class="text-2xl font-bold">
-						<span class="text-green-500">{player?.last_24_hours_wins || playerStats?.last_24_hours_wins || playerStats?.wins_24h || 0}</span>
+						<span class="text-green-500">{player?.last_24_hours_wins || player?.wins_last_24_hours || 0}</span>
 						<span class="text-gray-400">/</span>
-						<span class="text-red-500">{player?.last_24_hours_losses || playerStats?.last_24_hours_losses || playerStats?.losses_24h || 0}</span>
+						<span class="text-red-500">{player?.last_24_hours_losses || player?.losses_last_24_hours || 0}</span>
 					</p>
 				</div>
 				<div class="bg-predecessor-dark rounded-lg p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Avg KDA</p>
-					<p class="text-2xl font-bold">{typeof (player?.avg_kda_ratio || player?.kda_ratio) === 'number' ? (player?.avg_kda_ratio || player?.kda_ratio).toFixed(2) : playerStats?.avg_kda_ratio || playerStats?.kda_ratio || '-'}</p>
+					<p class="text-2xl font-bold">{player?.avg_kda_ratio?.toFixed?.(2) || player?.kda_ratio?.toFixed?.(2) || player?.average_kda_ratio?.toFixed?.(2) || '-'}</p>
 				</div>
 			</div>
 		</div>
